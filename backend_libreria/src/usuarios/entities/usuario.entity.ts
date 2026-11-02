@@ -1,4 +1,8 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { 
+    Column, 
+    Entity, 
+    PrimaryGeneratedColumn 
+} from 'typeorm';
 
 @Entity('usuarios')
 export class Usuario {
@@ -15,5 +19,8 @@ export class Usuario {
   email: string;
 
   @Column({ type: 'varchar', default: 'cliente' })
-  rol: string; // 'admin' | 'cliente'
+  rol: string; // 'admin', 'cliente'
+
+  @Column({ type: 'boolean', default: false })
+  premium: boolean;
 }

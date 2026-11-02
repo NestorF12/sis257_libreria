@@ -1,19 +1,32 @@
 import { Module } from '@nestjs/common';
-import { createObserveModule } from '@nestjs/observe';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-
-export const { ObserveModule, ObserveInstrument } = createObserveModule();
+import { UsuariosModule } from './usuarios/usuarios.module';
+import { DetalleVentasModule } from './detalle_ventas/detalle_ventas.module';
+import { AutoresModule } from './autores/autores.module';
+import { VentasModule } from './ventas/ventas.module';
+import { CategoriasModule } from './categorias/categorias.module';
+import { LibrosModule } from './libros/libros.module';
 
 @Module({
   imports: [
-    // Distributed tracing, auto-correlated logs, request/job metrics, error
-    // telemetry, alarms, and more — out of the box. Sign up at https://observe.nestjs.com
-    ObserveModule.forRoot({
-      appKey: 'YOUR_APP_KEY',
-      appSecret: 'YOUR_APP_SECRET',
-      serviceId: 'backend_libreria',
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: 'localhost',
+      port: 5432,
+      username: 'postgres',
+      password: '123456',
+      database: 'proyecto_libreria',
+      autoLoadEntities: true,
+      synchronize: true,
     }),
+    UsuariosModule,
+    LibrosModule,
+    CategoriasModule,
+    VentasModule,
+    AutoresModule,
+    DetalleVentasModule,
   ],
   controllers: [AppController],
   providers: [AppService],
