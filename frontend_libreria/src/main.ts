@@ -1,8 +1,28 @@
+import './assets/main.css'
+
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import PrimeVue from 'primevue/config'
+import Aura from '@primevue/themes/aura'
+import 'primeicons/primeicons.css'
+import 'primeflex/primeflex.min.css'
+
 import App from './App.vue'
+import router from './router'
 
-// esto importa Bootstrap CSS y JS de forma global
-import 'bootstrap/dist/css/bootstrap.min.css'
-import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+const app = createApp(App)
 
-createApp(App).mount('#app')
+app.use(createPinia())
+app.use(router)
+app.use(PrimeVue, {
+  theme: {
+    preset: Aura,
+    options: {
+      prefix: 'p',
+      darkModeSelector: 'system',
+      cssLayer: false, //no tendrá capas de css
+    },
+  },
+})
+
+app.mount('#app')
