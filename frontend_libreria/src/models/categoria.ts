@@ -3,4 +3,5 @@ export interface Categoria {
   nombre: string
   createdAt?: string
   updatedAt?: string
+  descripcion?: string
 }

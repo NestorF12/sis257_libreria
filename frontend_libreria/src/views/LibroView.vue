@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import LibroList from '@/components/libro/LibroList.vue'
+import LibroForm from '@/components/libro/LibroForm.vue' // <-- Importante: Importar tu formulario
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { ref } from 'vue'
 
 const mostrarDialog = ref(false)
-const libroListRef = ref<typeof LibroList | null>(null)
+const libroListRef = ref<any | null>(null)
 const libroEdit = ref<any>(null)
 
 function handleCreate() {
@@ -25,6 +26,7 @@ function handleCloseDialog() {
 
 function handleGuardar() {
   mostrarDialog.value = false
+  libroEdit.value = null
   libroListRef.value?.obtenerLista()
 }
 </script>
@@ -46,15 +48,8 @@ function handleGuardar() {
       :style="{ width: '50vw' }"
       modal
     >
-      <div class="p-fluid">
-        <p class="text-muted">
-          {{ libroEdit ? `Modificando registro ID: ${libroEdit.id}` : 'Formulario de registro' }}
-        </p>
-        <div class="d-flex justify-content-end gap-2 mt-3">
-          <Button label="Cancelar" severity="secondary" @click="handleCloseDialog" />
-          <Button label="Guardar" severity="success" @click="handleGuardar" />
-        </div>
-      </div>
+      <!-- Reemplazamos los botones sueltos por tu componente real de formulario -->
+      <LibroForm :libroEdit="libroEdit" @saved="handleGuardar" @close="handleCloseDialog" />
     </Dialog>
   </div>
 </template>

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import CategoriaList from '@/components/categoria/CategoriaList.vue'
+import CategoriaForm from '@/components/categoria/CategoriaForm.vue' // <-- 1. Importas tu formulario
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { ref } from 'vue'
 
 const mostrarDialog = ref(false)
-const categoriaListRef = ref<typeof CategoriaList | null>(null)
+const categoriaListRef = ref<any | null>(null) // Cambiado a any para evitar problemas con la referencia de tipo
 const categoriaEdit = ref<any>(null)
 
 function handleCreate() {
@@ -25,6 +26,7 @@ function handleCloseDialog() {
 
 function handleGuardar() {
   mostrarDialog.value = false
+  categoriaEdit.value = null
   categoriaListRef.value?.obtenerLista()
 }
 </script>
@@ -46,19 +48,12 @@ function handleGuardar() {
       :style="{ width: '50vw' }"
       modal
     >
-      <div class="p-fluid">
-        <p class="text-muted">
-          {{
-            categoriaEdit
-              ? `Modificando registro ID: ${categoriaEdit.id}`
-              : 'Formulario de registro'
-          }}
-        </p>
-        <div class="d-flex justify-content-end gap-2 mt-3">
-          <Button label="Cancelar" severity="secondary" @click="handleCloseDialog" />
-          <Button label="Guardar" severity="success" @click="handleGuardar" />
-        </div>
-      </div>
+      <!-- 2. Reemplazamos los botones sueltos por tu formulario real -->
+      <CategoriaForm
+        :categoriaEdit="categoriaEdit"
+        @saved="handleGuardar"
+        @close="handleCloseDialog"
+      />
     </Dialog>
   </div>
 </template>

@@ -4,7 +4,7 @@ import http from '@/plugins/axios'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
-import Dropdown from 'primevue/dropdown'
+import Select from 'primevue/select'
 import type { Libro } from '@/models/libro'
 import type { Categoria } from '@/models/categoria'
 import type { Autor } from '@/models/autor'
@@ -17,7 +17,7 @@ const props = defineProps<{
 
 const emit = defineEmits(['saved', 'close'])
 
-// Estado reactivo del formulario
+// Estado reactivo del formulario (actualizado con categoriaId e autorId)
 const form = ref<Partial<Libro>>({
   titulo: '',
   isbn: '',
@@ -27,7 +27,7 @@ const form = ref<Partial<Libro>>({
   autorId: undefined,
 })
 
-// Listas para los dropdowns (Llaves foráneas)
+// Listas para los Selects (Llaves foráneas)
 const categorias = ref<Categoria[]>([])
 const autores = ref<Autor[]>([])
 
@@ -139,7 +139,7 @@ async function guardar() {
     <!-- Categoría -->
     <div class="field mb-3">
       <label for="categoria" class="form-label fw-bold">Categoría</label>
-      <Dropdown
+      <Select
         id="categoria"
         v-model="form.categoriaId"
         :options="categorias"
@@ -154,7 +154,7 @@ async function guardar() {
     <!-- Autor -->
     <div class="field mb-3">
       <label for="autor" class="form-label fw-bold">Autor</label>
-      <Dropdown
+      <Select
         id="autor"
         v-model="form.autorId"
         :options="autores"
@@ -167,7 +167,7 @@ async function guardar() {
         <template #option="slotProps">
           <div>{{ slotProps.option.nombre }} {{ slotProps.option.apellido }}</div>
         </template>
-      </Dropdown>
+      </Select>
     </div>
 
     <!-- Botones de Acción -->
