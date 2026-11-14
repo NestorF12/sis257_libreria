@@ -36,10 +36,10 @@ export class CreateLibroDto {
   @ApiProperty({ example: 1, description: 'ID del autor asociado' })
   @IsInt({ message: 'El ID del autor debe ser un número entero' })
   @IsNotEmpty({ message: 'El ID del autor es obligatorio' })
-  id_autor: number;
+  autorId: number;
 
   @ApiProperty({ example: 1, description: 'ID de la categoría asociada' })
   @IsInt({ message: 'El ID de la categoría debe ser un número entero' })
   @IsNotEmpty({ message: 'El ID de la categoría es obligatorio' })
-  id_categoria: number;
+  categoriaId: number;
 }

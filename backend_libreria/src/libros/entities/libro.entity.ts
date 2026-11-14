@@ -22,8 +22,8 @@ export class Libro {
   stock: number;
 
   @Column({ type: 'int' })
-  id_autor: number;
+  autorId: number;
 
   @Column({ type: 'int' })
-  id_categoria: number;
+  categoriaId: number;
 }

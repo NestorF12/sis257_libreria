@@ -13,8 +13,13 @@ const errorMessage = ref<string | null>(null)
 async function obtenerLista() {
   try {
     loading.value = true
+    errorMessage.value = null
     const response = await http.get(ENDPOINT)
-    libros.value = response.data
+    console.log('RESPUESTA COMPLETA DE AXIOS:', response)
+    // 👇 Protección clave: aseguramos que se extraiga el arreglo correctamente
+    // por si el backend devuelve un objeto paginado o un arreglo directo.
+    const data = response.data
+    libros.value = Array.isArray(data) ? data : data.data || []
   } catch (error) {
     console.error('Error al obtener la lista de libros:', error)
     errorMessage.value = 'No se pudo conectar con el servidor.'
@@ -28,7 +33,7 @@ function emitirEdicion(libro: Libro) {
 }
 
 async function eliminar(id: number) {
-  if (confirm('Está seguro que desea eliminar el registro?')) {
+  if (confirm('¿Está seguro que desea eliminar el registro?')) {
     try {
       await http.delete(`${ENDPOINT}/${id}`)
       await obtenerLista()
@@ -90,40 +95,48 @@ defineExpose({ obtenerLista })
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(libro, index) in libros" :key="libro.id">
-                <td>{{ index + 1 }}</td>
-                <td class="fw-bold">{{ libro.titulo }}</td>
-                <td>{{ libro.isbn || 'S/N' }}</td>
-                <td>${{ libro.precio.toFixed(2) }}</td>
-                <td>
-                  <span class="badge" :class="libro.stock > 0 ? 'bg-success' : 'bg-danger'">
-                    {{ libro.stock }}
-                  </span>
-                </td>
-                <td>{{ libro.categoria?.nombre || libro.categoriaId }}</td>
-                <td>
-                  {{
-                    libro.autor ? `${libro.autor.nombre} ${libro.autor.apellido}` : libro.autorId
-                  }}
-                </td>
-                <td class="text-center">
-                  <Button
-                    icon="pi pi-pencil"
-                    aria-label="Editar"
-                    text
-                    severity="primary"
-                    @click="emitirEdicion(libro)"
-                  />
-                  <Button
-                    icon="pi pi-trash"
-                    aria-label="Eliminar"
-                    text
-                    severity="danger"
-                    @click="libro.id && eliminar(libro.id)"
-                  />
-                </td>
-              </tr>
-              <tr v-if="libros.length === 0">
+              <template v-if="libros && libros.length > 0">
+                <tr v-for="(libro, index) in libros" :key="libro.id || index">
+                  <td>{{ index + 1 }}</td>
+                  <td class="fw-bold">{{ libro.titulo }}</td>
+                  <td>{{ libro.isbn || 'S/N' }}</td>
+                  <!-- 👇 Protección total contra precios nulos o indefinidos -->
+                  <td>${{ Number(libro?.precio ?? 0).toFixed(2) }}</td>
+                  <td>
+                    <span
+                      class="badge"
+                      :class="(libro?.stock ?? 0) > 0 ? 'bg-success' : 'bg-danger'"
+                    >
+                      {{ libro?.stock ?? 0 }}
+                    </span>
+                  </td>
+                  <td>{{ libro?.categoria?.nombre || libro?.categoriaId || 'Sin categoría' }}</td>
+                  <td>
+                    {{
+                      libro?.autor
+                        ? `${libro.autor.nombre} ${libro.autor.apellido}`
+                        : libro?.autorId || 'Sin autor'
+                    }}
+                  </td>
+                  <td class="text-center">
+                    <Button
+                      icon="pi pi-pencil"
+                      aria-label="Editar"
+                      text
+                      severity="primary"
+                      @click="emitirEdicion(libro)"
+                    />
+                    <Button
+                      icon="pi pi-trash"
+                      aria-label="Eliminar"
+                      text
+                      severity="danger"
+                      @click="libro.id && eliminar(libro.id)"
+                    />
+                  </td>
+                </tr>
+              </template>
+              <tr v-else>
                 <td colspan="8" class="text-center text-muted py-4">
                   No hay registros disponibles.
                 </td>
