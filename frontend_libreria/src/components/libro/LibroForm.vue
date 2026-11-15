@@ -53,7 +53,12 @@ watch(
   () => props.libroEdit,
   (newVal) => {
     if (newVal) {
-      form.value = { ...newVal }
+      form.value = {
+        ...newVal,
+        // Aseguramos extraer los IDs correctamente ya sea que vengan planos o como objetos anidados
+        categoriaId: newVal.categoria?.id ?? newVal.categoriaId,
+        autorId: newVal.autor?.id ?? newVal.autorId,
+      }
     } else {
       form.value = {
         titulo: '',
@@ -117,23 +122,21 @@ async function guardar() {
     </div>
 
     <!-- Precio y Stock (Fila doble) -->
-    <div class="row">
-      <div class="col-md-6 field mb-3">
-        <label for="precio" class="form-label fw-bold">Precio ($us)</label>
-        <InputNumber
-          id="precio"
-          v-model="form.precio"
-          mode="currency"
-          currency="USD"
-          locale="en-US"
-          :min="0"
-          required
-        />
-      </div>
-      <div class="col-md-6 field mb-3">
-        <label for="stock" class="form-label fw-bold">Stock</label>
-        <InputNumber id="stock" v-model="form.stock" :min="0" required />
-      </div>
+    <div class="col-md-6 field mb-3">
+      <label for="precio" class="form-label fw-bold">Precio (Bs)</label>
+      <InputNumber
+        id="precio"
+        v-model="form.precio"
+        prefix="Bs. "
+        :minFractionDigits="2"
+        :maxFractionDigits="2"
+        :min="0"
+        required
+      />
+    </div>
+    <div class="col-md-6 field mb-3">
+      <label for="stock" class="form-label fw-bold">Stock</label>
+      <InputNumber id="stock" v-model="form.stock" :min="0" required />
     </div>
 
     <!-- Categoría -->

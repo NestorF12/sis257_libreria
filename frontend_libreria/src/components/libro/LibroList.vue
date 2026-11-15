@@ -15,11 +15,16 @@ async function obtenerLista() {
     loading.value = true
     errorMessage.value = null
     const response = await http.get(ENDPOINT)
-    console.log('RESPUESTA COMPLETA DE AXIOS:', response)
+    console.log('ugjgjg', import.meta.env.VITE_BASE_URL_ENDPOINT)
     // 👇 Protección clave: aseguramos que se extraiga el arreglo correctamente
     // por si el backend devuelve un objeto paginado o un arreglo directo.
-    const data = response.data
-    libros.value = Array.isArray(data) ? data : data.data || []
+    if (Array.isArray(response.data)) {
+      libros.value = response.data
+    } else if (response.data && Array.isArray(response.data.data)) {
+      libros.value = response.data.data
+    } else {
+      libros.value = []
+    }
   } catch (error) {
     console.error('Error al obtener la lista de libros:', error)
     errorMessage.value = 'No se pudo conectar con el servidor.'
@@ -101,7 +106,7 @@ defineExpose({ obtenerLista })
                   <td class="fw-bold">{{ libro.titulo }}</td>
                   <td>{{ libro.isbn || 'S/N' }}</td>
                   <!-- 👇 Protección total contra precios nulos o indefinidos -->
-                  <td>${{ Number(libro?.precio ?? 0).toFixed(2) }}</td>
+                  <td>Bs. {{ libro.precio }}</td>
                   <td>
                     <span
                       class="badge"

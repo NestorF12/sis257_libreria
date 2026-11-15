@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Autor } from './entities/autor.entity';
 import { CreateAutorDto } from './dto/create-autor.dto';
-import { UpdateAutorDto } from './dto/update-autore.dto';
+import { UpdateAutorDto } from './dto/update-autor.dto';
 
 @Injectable()
 export class AutoresService {
@@ -18,11 +18,21 @@ export class AutoresService {
   }
 
   async findAll() {
-    return await this.autorRepository.find();
+    return await this.autorRepository.find({
+      relations: {
+        libros: true,
+      } // 👈 Opcional: si quieres ver los libros de cada autor
+  });
   }
 
   async findOne(id: number) {
-    const autor = await this.autorRepository.findOneBy({ id });
+    const autor = await this.autorRepository.findOne({
+      where: { id },
+      relations: {
+        libros: true,
+      },
+    });
+    
     if (!autor) {
       throw new NotFoundException(`Autor con ID ${id} no encontrado`);
     }

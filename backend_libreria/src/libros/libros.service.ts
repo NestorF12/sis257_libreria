@@ -19,9 +19,14 @@ export class LibrosService {
   }
 
   // READ: Listar todos los libros
-  async findAll() {
-    return await this.libroRepository.find();
-  }
+async findAll() {
+  return await this.libroRepository.find({
+    relations: {
+      autor: true,     // 👈 Habilita la relación con Autor
+      categoria: true, // 👈 Habilita la relación con Categoría
+    },
+  });
+}
 
   // READ: Buscar un libro por su ID
   async findOne(id: number) {
