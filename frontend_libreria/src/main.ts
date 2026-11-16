@@ -6,6 +6,8 @@ import PrimeVue from 'primevue/config'
 import Aura from '@primevue/themes/aura'
 import 'primeicons/primeicons.css'
 import 'primeflex/primeflex.min.css'
+import '@/assets/css/bootstrap.min.css' // Ajusta la ruta según dónde los hayas guardado
+import '@/assets/css/style.css' // O el archivo principal de estilos de la plantilla
 
 import App from './App.vue'
 import router from './router'

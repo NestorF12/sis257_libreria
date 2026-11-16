@@ -56,25 +56,26 @@ defineExpose({ obtenerLista })
 </script>
 
 <template>
-  <div class="container mt-4">
-    <div class="card shadow-sm">
+  <div>
+    <div class="card border-0">
+      <!-- Encabezado superior con el tono ciruela de la plantilla -->
       <div
-        class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+        class="card-header text-white d-flex justify-content-between align-items-center py-3 px-4 custom-card-header"
       >
-        <h3 class="mb-0 h5">Catálogo de Libros</h3>
+        <span class="fw-bold">Libros</span>
         <Button
-          label="Actualizar"
+          label="Actualizar lista de libros"
           icon="pi pi-refresh"
-          severity="secondary"
           size="small"
+          class="text-white btn-refresh-pillomart"
           @click="obtenerLista"
         />
       </div>
 
-      <div class="card-body">
+      <div class="card-body px-0 pb-0">
         <!-- Estado de carga -->
         <div v-if="loading" class="text-center py-5">
-          <div class="spinner-border text-primary" role="status">
+          <div class="spinner-border custom-spinner" role="status">
             <span class="visually-hidden">Cargando...</span>
           </div>
         </div>
@@ -84,10 +85,10 @@ defineExpose({ obtenerLista })
           {{ errorMessage }}
         </div>
 
-        <!-- Tabla de datos -->
-        <div v-else class="table-responsive">
-          <table class="table table-striped table-hover align-middle">
-            <thead class="table-dark">
+        <!-- Tabla de datos sin scroll forzado -->
+        <div v-else class="w-100">
+          <table class="table table-hover align-middle mb-0 custom-table">
+            <thead>
               <tr>
                 <th>N°</th>
                 <th>Título</th>
@@ -103,18 +104,19 @@ defineExpose({ obtenerLista })
               <template v-if="libros && libros.length > 0">
                 <tr v-for="(libro, index) in libros" :key="libro.id || index">
                   <td>{{ index + 1 }}</td>
-                  <td class="fw-bold">{{ libro.titulo }}</td>
+                  <td class="fw-bold" style="color: #4b3049">{{ libro.titulo }}</td>
                   <td>{{ libro.isbn || 'S/N' }}</td>
-                  <!-- 👇 Protección total contra precios nulos o indefinidos -->
                   <td>Bs. {{ libro.precio }}</td>
                   <td>
                     <span
-                      class="badge"
+                      class="badge text-white"
                       :class="(libro?.stock ?? 0) > 0 ? 'bg-success' : 'bg-danger'"
+                      style="color: #ffffff !important"
                     >
                       {{ libro?.stock ?? 0 }}
                     </span>
                   </td>
+
                   <td>{{ libro?.categoria?.nombre || libro?.categoriaId || 'Sin categoría' }}</td>
                   <td>
                     {{
@@ -123,12 +125,12 @@ defineExpose({ obtenerLista })
                         : libro?.autorId || 'Sin autor'
                     }}
                   </td>
-                  <td class="text-center">
+                  <td class="text-center text-nowrap">
                     <Button
                       icon="pi pi-pencil"
                       aria-label="Editar"
                       text
-                      severity="primary"
+                      class="btn-edit-icon"
                       @click="emitirEdicion(libro)"
                     />
                     <Button
@@ -157,6 +159,49 @@ defineExpose({ obtenerLista })
 <style scoped>
 .card {
   border-radius: 8px;
-  border: 1px solid var(--p-surface-border, #dee2e6);
+}
+
+/* Barra superior de la tabla en tono ciruela oscuro */
+.custom-card-header {
+  background-color: #4b3049;
+  border-radius: 8px 8px 0 0;
+}
+
+/* Botón de actualizar en lila suave */
+.btn-refresh-pillomart {
+  background-color: #b08ead !important;
+  border-color: #b08ead !important;
+  transition: opacity 0.2s ease;
+}
+
+.btn-refresh-pillomart:hover {
+  opacity: 0.85;
+}
+
+/* Spinner de carga armonizado */
+.custom-spinner {
+  color: #b08ead;
+}
+
+/* Cabecera de la tabla en tono lila suave con texto oscuro */
+.custom-table thead th {
+  background-color: #f4edf3;
+  color: #4b3049;
+  border-bottom: 2px solid #b08ead;
+  font-weight: 700;
+}
+
+/* Efecto suave al pasar el mouse por una fila */
+.custom-table tbody tr:hover {
+  background-color: #faf7fa;
+}
+
+/* Ícono de editar en tono lila/ciruela */
+.btn-edit-icon {
+  color: #4b3049 !important;
+}
+
+.btn-edit-icon:hover {
+  background-color: #f4edf3 !important;
 }
 </style>

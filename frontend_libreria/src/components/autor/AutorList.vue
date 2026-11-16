@@ -2,9 +2,9 @@
 import { ref, onMounted } from 'vue'
 import http from '@/plugins/axios'
 import Button from 'primevue/button'
-import type { Autor } from '@/models/autor'
+import type { Autor } from '@/models/autor' // Asegúrate de tener tu modelo o ajusta según corresponda
 
-const ENDPOINT = 'autores'
+const ENDPOINT = 'autores' // Ajusta el endpoint si tu API usa otro nombre (ej. 'autor')
 const autores = ref<Autor[]>([])
 const emit = defineEmits(['edit'])
 const loading = ref<boolean>(true)
@@ -13,10 +13,19 @@ const errorMessage = ref<string | null>(null)
 async function obtenerLista() {
   try {
     loading.value = true
+    errorMessage.value = null
     const response = await http.get(ENDPOINT)
-    autores.value = response.data
+
+    // Protección clave para extraer arreglos de manera segura del backend
+    if (Array.isArray(response.data)) {
+      autores.value = response.data
+    } else if (response.data && Array.isArray(response.data.data)) {
+      autores.value = response.data.data
+    } else {
+      autores.value = []
+    }
   } catch (error) {
-    console.error('Error al obtener la lista:', error)
+    console.error('Error al obtener la lista de autores:', error)
     errorMessage.value = 'No se pudo conectar con el servidor.'
   } finally {
     loading.value = false
@@ -28,9 +37,8 @@ function emitirEdicion(autor: Autor) {
 }
 
 async function eliminar(id: number) {
-  if (confirm('Está seguro que desea eliminar el registro?')) {
+  if (confirm('¿Está seguro que desea eliminar el registro?')) {
     try {
-      // Nota: asegurate de usar comillas invertidas `` para que la interpolación '${ENDPOINT}/${id}' funcione
       await http.delete(`${ENDPOINT}/${id}`)
       await obtenerLista()
     } catch (error) {
@@ -47,25 +55,26 @@ defineExpose({ obtenerLista })
 </script>
 
 <template>
-  <div class="container mt-4">
-    <div class="card shadow-sm">
+  <div>
+    <div class="card border-0">
+      <!-- Encabezado superior con el tono ciruela de la plantilla -->
       <div
-        class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+        class="card-header text-white d-flex justify-content-between align-items-center py-3 px-4 custom-card-header"
       >
-        <h3 class="mb-0 h5">Gestión de Autores</h3>
+        <span class="fw-bold"> Autores </span>
         <Button
-          label="Actualizar"
+          label="Actualizar lista de autores"
           icon="pi pi-refresh"
-          severity="secondary"
           size="small"
+          class="text-white btn-refresh-pillomart"
           @click="obtenerLista"
         />
       </div>
 
-      <div class="card-body">
+      <div class="card-body px-0 pb-0">
         <!-- Estado de carga -->
         <div v-if="loading" class="text-center py-5">
-          <div class="spinner-border text-primary" role="status">
+          <div class="spinner-border custom-spinner" role="status">
             <span class="visually-hidden">Cargando...</span>
           </div>
         </div>
@@ -75,52 +84,45 @@ defineExpose({ obtenerLista })
           {{ errorMessage }}
         </div>
 
-        <!-- Tabla de datos -->
-        <div v-else class="table-responsive">
-          <table class="table table-striped table-hover align-middle">
-            <thead class="table-dark">
+        <!-- Tabla de datos sin scroll forzado -->
+        <div v-else class="w-100">
+          <table class="table table-hover align-middle mb-0 custom-table">
+            <thead>
               <tr>
                 <th>N°</th>
                 <th>Nombre</th>
                 <th>Apellido</th>
                 <th>Nacionalidad</th>
-                <th>Fotografía</th>
                 <th class="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(autor, index) in autores" :key="autor.id">
-                <td>{{ index + 1 }}</td>
-                <td class="fw-bold">{{ autor.nombre }}</td>
-                <td>{{ autor.apellido }}</td>
-                <td>{{ autor.nacionalidad || 'No especificada' }}</td>
-                <td>
-                  <img
-                    :src="autor.fotografia || 'https://via.placeholder.com/80'"
-                    alt="foto"
-                    width="60"
-                    class="rounded shadow-sm"
-                  />
-                </td>
-                <td class="text-center">
-                  <Button
-                    icon="pi pi-pencil"
-                    aria-label="Editar"
-                    text
-                    severity="primary"
-                    @click="emitirEdicion(autor)"
-                  />
-                  <Button
-                    icon="pi pi-trash"
-                    aria-label="Eliminar"
-                    text
-                    severity="danger"
-                    @click="autor.id && eliminar(autor.id)"
-                  />
-                </td>
-              </tr>
-              <tr v-if="autores.length === 0">
-                <td colspan="6" class="text-center text-muted py-4">
+              <template v-if="autores && autores.length > 0">
+                <tr v-for="(autor, index) in autores" :key="autor.id || index">
+                  <td>{{ index + 1 }}</td>
+                  <td class="fw-bold" style="color: #4b3049">{{ autor.nombre }}</td>
+                  <td>{{ autor.apellido }}</td>
+                  <td>{{ autor.nacionalidad || 'No especificada' }}</td>
+                  <td class="text-center text-nowrap">
+                    <Button
+                      icon="pi pi-pencil"
+                      aria-label="Editar"
+                      text
+                      class="btn-edit-icon"
+                      @click="emitirEdicion(autor)"
+                    />
+                    <Button
+                      icon="pi pi-trash"
+                      aria-label="Eliminar"
+                      text
+                      severity="danger"
+                      @click="autor.id && eliminar(autor.id)"
+                    />
+                  </td>
+                </tr>
+              </template>
+              <tr v-else>
+                <td colspan="5" class="text-center text-muted py-4">
                   No hay registros disponibles.
                 </td>
               </tr>
@@ -135,6 +137,49 @@ defineExpose({ obtenerLista })
 <style scoped>
 .card {
   border-radius: 8px;
-  border: 1px solid var(--p-surface-border, #dee2e6);
+}
+
+/* Barra superior de la tabla en tono ciruela oscuro */
+.custom-card-header {
+  background-color: #4b3049;
+  border-radius: 8px 8px 0 0;
+}
+
+/* Botón de actualizar en lila suave */
+.btn-refresh-pillomart {
+  background-color: #b08ead !important;
+  border-color: #b08ead !important;
+  transition: opacity 0.2s ease;
+}
+
+.btn-refresh-pillomart:hover {
+  opacity: 0.85;
+}
+
+/* Spinner de carga armonizado */
+.custom-spinner {
+  color: #b08ead;
+}
+
+/* Cabecera de la tabla en tono lila suave con texto oscuro */
+.custom-table thead th {
+  background-color: #f4edf3;
+  color: #4b3049;
+  border-bottom: 2px solid #b08ead;
+  font-weight: 700;
+}
+
+/* Efecto suave al pasar el mouse por una fila */
+.custom-table tbody tr:hover {
+  background-color: #faf7fa;
+}
+
+/* Ícono de editar en tono lila/ciruela */
+.btn-edit-icon {
+  color: #4b3049 !important;
+}
+
+.btn-edit-icon:hover {
+  background-color: #f4edf3 !important;
 }
 </style>
