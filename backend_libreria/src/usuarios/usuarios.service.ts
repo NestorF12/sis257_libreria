@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from './entities/usuario.entity';
@@ -12,9 +12,27 @@ export class UsuariosService {
     private readonly repositorioUsuario: Repository<Usuario>,
   ) {}
 
-  // CREATE: Crear un nuevo usuario
+  // CREATE: Crear un nuevo usuario (con validación de correo único)
   async create(createUsuarioDto: CreateUsuarioDto) {
-    const nuevoUsuario = this.repositorioUsuario.create(createUsuarioDto);
+    const { email } = createUsuarioDto;
+
+    // 1. Verificar si el correo ya existe
+    const correoExistente = await this.repositorioUsuario.findOneBy({ 
+      email: email.trim() 
+    });
+
+    if (correoExistente) {
+      throw new ConflictException(`El correo electrónico '${email}' ya se encuentra registrado.`);
+    }
+
+    // 2. Crear y guardar el nuevo usuario
+    const nuevoUsuario = this.repositorioUsuario.create({
+      ...createUsuarioDto,
+      nombre: createUsuarioDto.nombre.trim(),
+      telefono: createUsuarioDto.telefono.trim(),
+      email: email.trim(),
+    });
+
     return await this.repositorioUsuario.save(nuevoUsuario);
   }
 

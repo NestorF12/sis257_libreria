@@ -1,26 +1,23 @@
 import { 
-    Column, 
-    Entity, 
-    PrimaryGeneratedColumn 
+  Column, 
+  Entity, 
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn
 } from 'typeorm';
 
 @Entity('usuarios')
 export class Usuario {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn('identity')
   id: number;
 
-  @Column({ type: 'varchar', unique: true })
-  usuario: string;
+  @Column({ type: 'varchar', length: 150 })
+  nombre: string;
 
-  @Column({ type: 'varchar' })
-  clave: string;
+  @Column({ type: 'varchar', length: 25 })
+  telefono: string;
 
-  @Column({ type: 'varchar', unique: true })
+  @Column({ type: 'varchar', length: 150, unique: true })
   email: string;
-
-  @Column({ type: 'varchar', default: 'cliente' })
-  rol: string; // 'admin', 'cliente'
-
-  @Column({ type: 'boolean', default: false })
-  premium: boolean;
 }
