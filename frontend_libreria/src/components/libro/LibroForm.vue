@@ -41,8 +41,13 @@ async function cargarCatalogos() {
       http.get('categorias'),
       http.get('autores'),
     ])
-    categorias.value = resCategorias.data
-    autores.value = resAutores.data
+    categorias.value = Array.isArray(resCategorias.data)
+      ? resCategorias.data
+      : resCategorias.data?.data || []
+    autores.value = Array.isArray(resAutores.data) ? resAutores.data : resAutores.data?.data || []
+
+    console.log('Categorías cargadas', categorias.value)
+    console.log('Autores cargados', autores.value)
   } catch (error) {
     console.error('Error al cargar catálogos:', error)
   }
