@@ -48,7 +48,7 @@ onUnmounted(() => {
             ⨝ MagnaBooks
           </router-link>
 
-          <!-- 2. Menú de navegación principal (Visible y centrado en cualquier pantalla) -->
+          <!-- 2. Menú de navegación principal (Incluye Libros, Autores, Categorías, Usuarios, Ventas y Detalle) -->
           <nav class="mx-auto mx-md-0">
             <ul
               class="navbar-nav flex-row flex-wrap justify-content-center gap-3 gap-md-4 mb-0"
@@ -65,6 +65,15 @@ onUnmounted(() => {
               </li>
               <li class="nav-item">
                 <router-link class="nav-link px-2" to="/categorias">Categorías</router-link>
+              </li>
+              <li class="nav-item">
+                <router-link class="nav-link px-2" to="/usuarios">Usuarios</router-link>
+              </li>
+              <li class="nav-item">
+                <router-link class="nav-link px-2" to="/ventas">Ventas</router-link>
+              </li>
+              <li class="nav-item">
+                <router-link class="nav-link px-2" to="/detalle-ventas">Detalle Ventas</router-link>
               </li>
             </ul>
           </nav>

@@ -2,9 +2,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 //import HomeView from '../views/HomeView.vue'
 import DefaultLayout from '@/components/layouts/DefaultLayout.vue'
 // Importa tus vistas del CRUD
-import LibrosView from '@/views/LibroView.vue' // (Ajusta la ruta si tus vistas están en otra carpeta, ej: '@/views/libro/LibroView.vue')
+import LibrosView from '@/views/LibroView.vue'
 import AutoresView from '@/views/AutorView.vue'
 import CategoriasView from '@/views/CategoriaView.vue'
+import UsuarioView from '@/views/UsuarioView.vue'
+import VentasView from '@/views/VentaView.vue'
+import DetalleVentasView from '@/views/DetalleVentaView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -31,6 +34,21 @@ const router = createRouter({
           path: 'categorias',
           name: 'categorias',
           component: CategoriasView,
+        },
+        {
+          path: 'usuarios', // Sin barra '/' al inicio porque es ruta hija
+          name: 'usuarios',
+          component: UsuarioView,
+        },
+        {
+          path: 'ventas', // Sin barra '/' al inicio
+          name: 'ventas',
+          component: VentasView,
+        },
+        {
+          path: 'detalle-ventas', // Sin barra '/' al inicio
+          name: 'detalle-ventas',
+          component: DetalleVentasView,
         },
       ],
     },

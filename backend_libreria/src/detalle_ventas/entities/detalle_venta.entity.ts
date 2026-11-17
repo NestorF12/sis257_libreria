@@ -6,7 +6,7 @@ import {
   ManyToOne, 
   JoinColumn 
 } from 'typeorm';
-import { Venta } from './venta.entity';
+import { Venta } from '../../ventas/entities/venta.entity';
 // Importa tu entidad Libro (ajusta la ruta según tu estructura de carpetas)
 import { Libro } from '../../libros/entities/libro.entity';
 
