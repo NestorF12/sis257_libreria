@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
-//import HomeView from '../views/HomeView.vue'
 import DefaultLayout from '@/components/layouts/DefaultLayout.vue'
+import { useAuthStore } from '@/stores/index'
+import { getTokenFromLocalStorage } from '@/helpers/index'
+
 // Importa tus vistas del CRUD
 import LibrosView from '@/views/LibroView.vue'
 import AutoresView from '@/views/AutorView.vue'
@@ -8,6 +10,7 @@ import CategoriasView from '@/views/CategoriaView.vue'
 import UsuarioView from '@/views/UsuarioView.vue'
 import VentasView from '@/views/VentaView.vue'
 import DetalleVentasView from '@/views/DetalleVentaView.vue'
+import LoginView from '@/views/LoginView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -52,9 +55,26 @@ const router = createRouter({
         },
       ],
     },
-    // Si tienes una vista de Login u otras fuera del layout, las pones aquí afuera:
-    // { path: '/login', component: LoginView }
+    // Vista de Login fuera del layout principal para que ocupe toda la pantalla
+    {
+      path: '/login',
+      name: 'login',
+      component: LoginView,
+    },
   ],
+})
+
+// Guardia de navegación global para proteger rutas privadas
+router.beforeEach(async (to) => {
+  const publicPages = ['/login']
+  const authRequired = !publicPages.includes(to.path)
+  const authStore = useAuthStore()
+
+  if (authRequired && !getTokenFromLocalStorage()) {
+    if (authStore) authStore.logout()
+    authStore.returnUrl = to.fullPath
+    return '/login'
+  }
 })
 
 export default router

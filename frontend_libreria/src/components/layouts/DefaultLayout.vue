@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useAuthStore } from '@/stores/index'
 
 // Rutas de tus 3 imágenes de fondo en la carpeta public/img/
 const imagenesFondo = ['/img/fondo_1.jpg', '/img/fondo_2.jpg', '/img/fondo_3.jpg']
-
+const authStore = useAuthStore()
 const indiceActual = ref(0)
 let intervalo: ReturnType<typeof setInterval> | null = null
 
@@ -48,7 +49,7 @@ onUnmounted(() => {
             ⨝ MagnaBooks
           </router-link>
 
-          <!-- 2. Menú de navegación principal (Incluye Libros, Autores, Categorías, Usuarios, Ventas y Detalle) -->
+          <!-- 2. Menú de navegación principal -->
           <nav class="mx-auto mx-md-0">
             <ul
               class="navbar-nav flex-row flex-wrap justify-content-center gap-3 gap-md-4 mb-0"
@@ -78,11 +79,23 @@ onUnmounted(() => {
             </ul>
           </nav>
 
-          <!-- 3. Icono del carrito / Acciones a la derecha -->
-          <div class="hearer_icon d-flex align-items-center">
+          <!-- 3. Icono del carrito y Acciones de usuario integradas -->
+          <div class="hearer_icon d-flex align-items-center gap-3">
             <router-link to="/libros" class="text-dark fs-5">
               <i class="flaticon-shopping-cart-black-shape"></i>
             </router-link>
+
+            <span v-if="authStore.user" class="fw-bold">
+              Hola, {{ authStore.user.nombre }} ({{ authStore.user.rol }})
+            </span>
+
+            <button
+              v-if="authStore.token"
+              @click="authStore.logout()"
+              class="btn btn-danger btn-sm"
+            >
+              Cerrar Sesión
+            </button>
           </div>
         </div>
       </div>

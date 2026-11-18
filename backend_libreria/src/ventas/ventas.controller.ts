@@ -1,10 +1,13 @@
 // src/ventas/ventas.controller.ts
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { VentasService } from './ventas.service';
 import { CreateVentaDto } from './dto/create-venta.dto';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Ventas')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('ventas')
 export class VentasController {
   constructor(private readonly ventasService: VentasService) {}
