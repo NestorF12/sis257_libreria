@@ -1,4 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { UsuariosService } from '../usuarios/usuarios.service';
 import { AuthLoginDto } from './dto/auth-login.dto';
@@ -10,6 +11,7 @@ export class AuthService {
   constructor(
     private usuarioService: UsuariosService,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
 
   async login(authLoginDto: AuthLoginDto) {
@@ -33,10 +35,14 @@ export class AuthService {
 
   async getAccessToken(payload: JwtPayload): Promise<string> {
     type StringValue = `${number}s` | `${number}m` | `${number}h` | `${number}d`;
-    const expiration = (process.env.JWT_TOKEN_EXPIRATION as StringValue) || '600s';
+    const expiration =
+      (this.configService.get<string>('JWT_TOKEN_EXPIRATION') as StringValue) ||
+      '600s';
+    const secret =
+      this.configService.get<string>('JWT_SECRET') || 'secreto_super_seguro';
 
     return this.jwtService.signAsync(payload, {
-      secret: process.env.JWT_TOKEN ?? 'default_secret',
+      secret,
       expiresIn: expiration,
     });
   }

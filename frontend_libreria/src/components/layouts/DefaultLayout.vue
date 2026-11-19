@@ -104,7 +104,7 @@ onUnmounted(() => {
           </nav>
 
           <!-- 3. Acciones de sesión y carrito -->
-          <div class="hearer_icon d-flex align-items-center gap-3">
+          <div class="hearer_icon d-flex align-items-center gap-2 gap-sm-3">
             <router-link
               v-if="authStore.isComprador"
               to="/carrito"
@@ -130,13 +130,18 @@ onUnmounted(() => {
               </button>
             </template>
 
-            <router-link
-              v-else
-              to="/login"
-              class="btn btn-sm text-white fw-semibold px-3 py-2 btn-login-nav"
-            >
-              Iniciar Sesión
-            </router-link>
+            <template v-else>
+              <router-link to="/registro" class="btn btn-sm fw-semibold px-3 py-2 btn-register-nav">
+                Registrarse
+              </router-link>
+
+              <router-link
+                to="/login"
+                class="btn btn-sm text-white fw-semibold px-3 py-2 btn-login-nav"
+              >
+                Iniciar Sesión
+              </router-link>
+            </template>
           </div>
         </div>
       </div>
@@ -214,6 +219,22 @@ body {
 .navbar-nav .nav-link:hover,
 .navbar-nav .router-link-exact-active {
   color: #b08ead !important;
+}
+
+.btn-register-nav {
+  background-color: transparent;
+  color: #4b3049;
+  border: 1.5px solid #4b3049;
+  text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.btn-register-nav:hover {
+  background-color: #faf7fa;
+  color: #b08ead;
+  border-color: #b08ead;
 }
 
 .btn-login-nav {

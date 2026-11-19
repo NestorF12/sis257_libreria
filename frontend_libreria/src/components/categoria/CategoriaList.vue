@@ -2,8 +2,10 @@
 import { ref, onMounted } from 'vue'
 import http from '@/plugins/axios'
 import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
 import type { Categoria } from '@/models/categoria'
 import { useAuthStore } from '@/stores/index'
+import { useBuscador } from '@/composables/useBuscador'
 
 const ENDPOINT = 'categorias'
 const categorias = ref<Categoria[]>([])
@@ -11,6 +13,12 @@ const emit = defineEmits(['edit'])
 const loading = ref<boolean>(true)
 const errorMessage = ref<string | null>(null)
 const authStore = useAuthStore()
+
+const {
+  termino: buscarCategoria,
+  itemsFiltrados: categoriasFiltradas,
+  limpiarBusqueda: limpiarCategoria,
+} = useBuscador(categorias, (categoria) => [categoria.nombre, categoria.descripcion])
 
 async function obtenerLista() {
   try {
@@ -73,6 +81,32 @@ defineExpose({ obtenerLista })
         />
       </div>
 
+      <!-- Barra de búsqueda de categorías -->
+      <div
+        class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-4 py-3 border-bottom search-bar-box"
+      >
+        <div class="d-flex gap-2 flex-grow-1" style="max-width: 460px">
+          <InputText
+            v-model="buscarCategoria"
+            placeholder="Buscar categoría por nombre o descripción..."
+            class="w-100"
+          />
+          <Button
+            v-if="buscarCategoria"
+            icon="pi pi-times"
+            severity="secondary"
+            outlined
+            aria-label="Limpiar búsqueda"
+            @click="limpiarCategoria"
+          />
+        </div>
+
+        <small class="text-muted">
+          Mostrando <strong>{{ categoriasFiltradas.length }}</strong> de
+          <strong>{{ categorias.length }}</strong> categoría(s)
+        </small>
+      </div>
+
       <div class="card-body px-0 pb-0">
         <div v-if="loading" class="text-center py-5">
           <div class="spinner-border custom-spinner" role="status">
@@ -95,8 +129,8 @@ defineExpose({ obtenerLista })
               </tr>
             </thead>
             <tbody>
-              <template v-if="categorias && categorias.length > 0">
-                <tr v-for="(categoria, index) in categorias" :key="categoria.id || index">
+              <template v-if="categoriasFiltradas && categoriasFiltradas.length > 0">
+                <tr v-for="(categoria, index) in categoriasFiltradas" :key="categoria.id || index">
                   <td>{{ index + 1 }}</td>
                   <td class="fw-bold" style="color: #4b3049">{{ categoria.nombre }}</td>
                   <td>{{ categoria.descripcion || 'Sin descripción' }}</td>
@@ -120,7 +154,11 @@ defineExpose({ obtenerLista })
               </template>
               <tr v-else>
                 <td :colspan="authStore.isVendedor ? 4 : 3" class="text-center text-muted py-4">
-                  No hay registros disponibles.
+                  {{
+                    buscarCategoria
+                      ? `No se encontraron categorías que coincidan con "${buscarCategoria}".`
+                      : 'No hay registros disponibles.'
+                  }}
                 </td>
               </tr>
             </tbody>
@@ -139,6 +177,10 @@ defineExpose({ obtenerLista })
 .custom-card-header {
   background-color: #4b3049;
   border-radius: 8px 8px 0 0;
+}
+
+.search-bar-box {
+  background-color: #faf7fa;
 }
 
 .btn-refresh-pillomart {

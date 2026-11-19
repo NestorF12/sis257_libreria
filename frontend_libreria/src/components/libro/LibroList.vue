@@ -2,8 +2,10 @@
 import { ref, onMounted } from 'vue'
 import http from '@/plugins/axios'
 import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
 import type { Libro } from '@/models/libro'
 import { useAuthStore } from '@/stores/index'
+import { useBuscador } from '@/composables/useBuscador'
 
 const ENDPOINT = 'libros'
 const libros = ref<Libro[]>([])
@@ -13,8 +15,19 @@ const loading = ref<boolean>(true)
 const errorMessage = ref<string | null>(null)
 const authStore = useAuthStore()
 
+const {
+  termino: buscarLibro,
+  itemsFiltrados: librosFiltrados,
+  limpiarBusqueda: limpiarLibro,
+} = useBuscador(libros, (libro) => [
+  libro.titulo,
+  libro.isbn,
+  libro.autor ? `${libro.autor.nombre ?? ''} ${libro.autor.apellido ?? ''}` : libro.autorId,
+  libro.categoria?.nombre ?? libro.categoriaId,
+])
+
 function coverKey(libro: Libro, index: number): string {
-  return String(libro.id ?? index)
+  return String(libro.id ?? `${libro.titulo}-${index}`)
 }
 
 function mostrarPortada(libro: Libro, index: number): boolean {
@@ -93,6 +106,32 @@ defineExpose({ obtenerLista })
         />
       </div>
 
+      <!-- Barra de búsqueda de libros -->
+      <div
+        class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-4 py-3 border-bottom search-bar-box"
+      >
+        <div class="d-flex gap-2 flex-grow-1" style="max-width: 500px">
+          <InputText
+            v-model="buscarLibro"
+            placeholder="Buscar por título, autor, categoría o ISBN..."
+            class="w-100"
+          />
+          <Button
+            v-if="buscarLibro"
+            icon="pi pi-times"
+            severity="secondary"
+            outlined
+            aria-label="Limpiar búsqueda"
+            @click="limpiarLibro"
+          />
+        </div>
+
+        <small class="text-muted">
+          Mostrando <strong>{{ librosFiltrados.length }}</strong> de
+          <strong>{{ libros.length }}</strong> libro(s)
+        </small>
+      </div>
+
       <div class="card-body px-0 pb-0">
         <div v-if="loading" class="text-center py-5">
           <div class="spinner-border custom-spinner" role="status">
@@ -120,8 +159,8 @@ defineExpose({ obtenerLista })
               </tr>
             </thead>
             <tbody>
-              <template v-if="libros && libros.length > 0">
-                <tr v-for="(libro, index) in libros" :key="libro.id || index">
+              <template v-if="librosFiltrados && librosFiltrados.length > 0">
+                <tr v-for="(libro, index) in librosFiltrados" :key="libro.id || index">
                   <td>{{ index + 1 }}</td>
                   <td>
                     <img
@@ -191,7 +230,11 @@ defineExpose({ obtenerLista })
               </template>
               <tr v-else>
                 <td colspan="9" class="text-center text-muted py-4">
-                  No hay registros disponibles.
+                  {{
+                    buscarLibro
+                      ? `No se encontraron libros que coincidan con "${buscarLibro}".`
+                      : 'No hay registros disponibles.'
+                  }}
                 </td>
               </tr>
             </tbody>
@@ -210,6 +253,10 @@ defineExpose({ obtenerLista })
 .custom-card-header {
   background-color: #4b3049;
   border-radius: 8px 8px 0 0;
+}
+
+.search-bar-box {
+  background-color: #faf7fa;
 }
 
 .btn-refresh-pillomart {

@@ -18,7 +18,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('autores')
-@ApiBearerAuth()
+@ApiBearerAuth('access-token')
 @Controller('autores')
 export class AutoresController {
   constructor(private readonly autoresService: AutoresService) {}

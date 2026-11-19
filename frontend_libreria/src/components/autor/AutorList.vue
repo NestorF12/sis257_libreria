@@ -2,8 +2,10 @@
 import { ref, onMounted } from 'vue'
 import http from '@/plugins/axios'
 import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
 import type { Autor } from '@/models/autor'
 import { useAuthStore } from '@/stores/index'
+import { useBuscador } from '@/composables/useBuscador'
 
 const ENDPOINT = 'autores'
 const autores = ref<Autor[]>([])
@@ -11,6 +13,12 @@ const emit = defineEmits(['edit'])
 const loading = ref<boolean>(true)
 const errorMessage = ref<string | null>(null)
 const authStore = useAuthStore()
+
+const {
+  termino: buscarAutor,
+  itemsFiltrados: autoresFiltrados,
+  limpiarBusqueda: limpiarAutor,
+} = useBuscador(autores, (autor) => [autor.nombre, autor.apellido, autor.nacionalidad])
 
 async function obtenerLista() {
   try {
@@ -73,6 +81,32 @@ defineExpose({ obtenerLista })
         />
       </div>
 
+      <!-- Barra de búsqueda de autores -->
+      <div
+        class="d-flex flex-wrap justify-content-between align-items-center gap-2 px-4 py-3 border-bottom search-bar-box"
+      >
+        <div class="d-flex gap-2 flex-grow-1" style="max-width: 460px">
+          <InputText
+            v-model="buscarAutor"
+            placeholder="Buscar autor por nombre, apellido o nacionalidad..."
+            class="w-100"
+          />
+          <Button
+            v-if="buscarAutor"
+            icon="pi pi-times"
+            severity="secondary"
+            outlined
+            aria-label="Limpiar búsqueda"
+            @click="limpiarAutor"
+          />
+        </div>
+
+        <small class="text-muted">
+          Mostrando <strong>{{ autoresFiltrados.length }}</strong> de
+          <strong>{{ autores.length }}</strong> autor(es)
+        </small>
+      </div>
+
       <div class="card-body px-0 pb-0">
         <div v-if="loading" class="text-center py-5">
           <div class="spinner-border custom-spinner" role="status">
@@ -96,8 +130,8 @@ defineExpose({ obtenerLista })
               </tr>
             </thead>
             <tbody>
-              <template v-if="autores && autores.length > 0">
-                <tr v-for="(autor, index) in autores" :key="autor.id || index">
+              <template v-if="autoresFiltrados && autoresFiltrados.length > 0">
+                <tr v-for="(autor, index) in autoresFiltrados" :key="autor.id || index">
                   <td>{{ index + 1 }}</td>
                   <td class="fw-bold" style="color: #4b3049">{{ autor.nombre }}</td>
                   <td>{{ autor.apellido }}</td>
@@ -122,7 +156,11 @@ defineExpose({ obtenerLista })
               </template>
               <tr v-else>
                 <td :colspan="authStore.isVendedor ? 5 : 4" class="text-center text-muted py-4">
-                  No hay registros disponibles.
+                  {{
+                    buscarAutor
+                      ? `No se encontraron autores que coincidan con "${buscarAutor}".`
+                      : 'No hay registros disponibles.'
+                  }}
                 </td>
               </tr>
             </tbody>
@@ -141,6 +179,10 @@ defineExpose({ obtenerLista })
 .custom-card-header {
   background-color: #4b3049;
   border-radius: 8px 8px 0 0;
+}
+
+.search-bar-box {
+  background-color: #faf7fa;
 }
 
 .btn-refresh-pillomart {

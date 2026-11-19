@@ -18,7 +18,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('libros')
-@ApiBearerAuth()
+@ApiBearerAuth('access-token')
 @Controller('libros')
 export class LibrosController {
   constructor(private readonly librosService: LibrosService) {}

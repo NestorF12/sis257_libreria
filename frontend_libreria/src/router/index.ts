@@ -11,6 +11,7 @@ import UsuarioView from '@/views/UsuarioView.vue'
 import VentasView from '@/views/VentaView.vue'
 import DetalleVentasView from '@/views/DetalleVentaView.vue'
 import LoginView from '@/views/LoginView.vue'
+import RegistroView from '@/views/RegistroView.vue'
 import CarritoView from '@/views/CarritoView.vue'
 
 declare module 'vue-router' {
@@ -88,6 +89,12 @@ const router = createRouter({
       meta: { public: true },
     },
     {
+      path: '/registro',
+      name: 'registro',
+      component: RegistroView,
+      meta: { public: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: { name: 'home' },
     },
@@ -99,14 +106,14 @@ router.beforeEach((to) => {
   const token = authStore.token || getTokenFromLocalStorage()
   const isPublic = to.meta.public === true
 
-  // 1. Si no es Home ni Login y no hay sesión -> ir a Iniciar Sesión
+  // 1. Si no es público y no hay sesión -> ir a Iniciar Sesión
   if (!isPublic && !token) {
     authStore.returnUrl = to.fullPath
     return { name: 'login' }
   }
 
-  // 2. Si ya inició sesión e intenta entrar a /login -> ir a Home
-  if (to.name === 'login' && token) {
+  // 2. Si ya inició sesión e intenta entrar a /login o /registro -> ir a Home
+  if ((to.name === 'login' || to.name === 'registro') && token) {
     return { name: 'home' }
   }
 

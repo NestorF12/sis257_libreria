@@ -1,11 +1,19 @@
-import { IsNotEmpty, IsString, IsEmail } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsString, MinLength } from 'class-validator';
 
 export class AuthLoginDto {
-  @IsNotEmpty({ message: 'El campo Email no debe ser vacío' })
-  @IsEmail({}, { message: 'El formato del email es incorrecto' })
+  @ApiProperty({
+    example: 'admin@gmail.com',
+    description: 'Correo electrónico del usuario',
+  })
+  @IsEmail()
   email: string;
 
-  @IsNotEmpty({ message: 'El campo Clave no debe ser vacío' })
-  @IsString({ message: 'El campo Clave debe ser de tipo cadena' })
+  @ApiProperty({
+    example: 'tu_password',
+    description: 'Contraseña del usuario',
+  })
+  @IsString()
+  @MinLength(6)
   clave: string;
 }

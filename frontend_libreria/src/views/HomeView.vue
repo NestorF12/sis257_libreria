@@ -3,9 +3,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import http from '@/plugins/axios'
 import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
 import type { Libro } from '@/models/libro'
 import { useAuthStore } from '@/stores/index'
 import { useCarritoStore } from '@/stores/carrito'
+import { useBuscador, normalizarTexto } from '@/composables/useBuscador'
 
 const ENDPOINT = 'libros'
 const router = useRouter()
@@ -17,6 +19,29 @@ const brokenCovers = ref<Record<string, boolean>>({})
 const loading = ref<boolean>(true)
 const errorMessage = ref<string | null>(null)
 const addedId = ref<number | null>(null)
+const filtroDisponibilidad = ref<'todos' | 'disponibles'>('todos')
+
+function nombreAutor(libro: Libro): string {
+  if (!libro.autor) return ''
+  return `${libro.autor.nombre ?? ''} ${libro.autor.apellido ?? ''}`.trim()
+}
+
+function nombreCategoria(libro: Libro): string {
+  return libro.categoria?.nombre?.trim() ?? ''
+}
+
+const {
+  termino: busquedaGeneral,
+  itemsFiltrados: coincidenciasCatalogo,
+  limpiarBusqueda,
+} = useBuscador(libros, (libro) => [
+  libro.titulo,
+  libro.isbn,
+  nombreAutor(libro),
+  nombreCategoria(libro),
+])
+
+const hayBusquedaActiva = computed(() => normalizarTexto(busquedaGeneral.value).length > 0)
 
 const librosRecientes = computed(() => {
   const copia = [...libros.value]
@@ -28,6 +53,14 @@ const librosRecientes = computed(() => {
     return (b.id ?? 0) - (a.id ?? 0)
   })
   return copia.slice(0, 8)
+})
+
+const librosMostrados = computed(() => {
+  const base = hayBusquedaActiva.value ? coincidenciasCatalogo.value : librosRecientes.value
+  if (filtroDisponibilidad.value === 'disponibles') {
+    return base.filter((libro) => (libro.stock ?? 0) > 0)
+  }
+  return base
 })
 
 function coverKey(libro: Libro, index: number): string {
@@ -104,7 +137,7 @@ onMounted(() => {
             <div class="breadcrumb_iner" style="height: auto; min-height: unset; padding: 0">
               <h2 class="mb-1">Bienvenido a MagnaBooks</h2>
               <p class="mb-0 text-white-50">
-                Explora los libros recién incorporados a nuestro catálogo
+                Consulta si tenemos el libro que buscas y revisa su disponibilidad sin registrarte
               </p>
             </div>
           </div>
@@ -120,13 +153,90 @@ onMounted(() => {
       </div>
     </section>
 
-    <!-- Cuadrícula grande de libros recién agregados -->
+    <!-- Buscador general para visitantes + Cuadrícula de libros -->
     <section class="pb-5">
       <div class="container-fluid px-4">
+        <!-- Barra de búsqueda general -->
+        <div class="card border-0 shadow-sm p-4 mb-4 bg-white home-search-card">
+          <div class="row g-3 align-items-end">
+            <div class="col-lg-7">
+              <label
+                for="buscador-general-home"
+                class="form-label fw-bold mb-2"
+                style="color: #4b3049"
+              >
+                Buscador general de libros (sin necesidad de cuenta)
+              </label>
+              <div class="d-flex gap-2">
+                <span class="p-input-icon-left w-100">
+                  <InputText
+                    id="buscador-general-home"
+                    v-model="busquedaGeneral"
+                    placeholder="Escribe título, autor, categoría o ISBN para verificar si lo tenemos..."
+                    class="w-100"
+                  />
+                </span>
+                <Button
+                  v-if="hayBusquedaActiva"
+                  icon="pi pi-times"
+                  label="Limpiar"
+                  severity="secondary"
+                  outlined
+                  @click="limpiarBusqueda"
+                />
+              </div>
+            </div>
+
+            <div class="col-lg-5 d-flex flex-wrap justify-content-lg-end align-items-center gap-2">
+              <Button
+                :label="`Todos (${libros.length})`"
+                size="small"
+                :outlined="filtroDisponibilidad !== 'todos'"
+                class="btn-filter-pill"
+                :class="{ 'text-white': filtroDisponibilidad === 'todos' }"
+                @click="filtroDisponibilidad = 'todos'"
+              />
+              <Button
+                label="Solo con stock"
+                icon="pi pi-check-circle"
+                size="small"
+                :outlined="filtroDisponibilidad !== 'disponibles'"
+                class="btn-filter-pill"
+                :class="{ 'text-white': filtroDisponibilidad === 'disponibles' }"
+                @click="filtroDisponibilidad = 'disponibles'"
+              />
+            </div>
+          </div>
+
+          <div
+            class="mt-3 pt-2 border-top d-flex flex-wrap justify-content-between align-items-center small text-muted gap-2"
+          >
+            <span v-if="hayBusquedaActiva">
+              Resultados para <strong>"{{ busquedaGeneral }}"</strong>:
+              <strong>{{ librosMostrados.length }}</strong> coincidencia(s) en todo el catálogo.
+            </span>
+            <span v-else>
+              Mostrando los <strong>{{ librosMostrados.length }}</strong> libros más recientes.
+              Escribe arriba para buscar en todo el catálogo.
+            </span>
+            <span v-if="!authStore.token">
+              ¿Quieres comprar? Inicia sesión solo cuando estés listo para agregar al carrito.
+            </span>
+          </div>
+        </div>
+
         <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
           <div>
-            <h3 class="fw-bold m-0" style="color: #4b3049">Recién Agregados</h3>
-            <small class="text-muted">Últimas novedades disponibles</small>
+            <h3 class="fw-bold m-0" style="color: #4b3049">
+              {{ hayBusquedaActiva ? 'Resultados de Búsqueda' : 'Recién Agregados' }}
+            </h3>
+            <small class="text-muted">
+              {{
+                hayBusquedaActiva
+                  ? 'Disponibilidad y precio actualizados del catálogo'
+                  : 'Últimas novedades disponibles'
+              }}
+            </small>
           </div>
           <Button
             label="Actualizar"
@@ -150,9 +260,9 @@ onMounted(() => {
         </div>
 
         <!-- Grid grande -->
-        <div v-else-if="librosRecientes.length > 0" class="row g-4">
+        <div v-else-if="librosMostrados.length > 0" class="row g-4">
           <div
-            v-for="(libro, index) in librosRecientes"
+            v-for="(libro, index) in librosMostrados"
             :key="libro.id ?? index"
             class="col-12 col-sm-6 col-md-4 col-xl-3"
           >
@@ -236,10 +346,24 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Vacío -->
-        <div v-else class="text-center py-5 bg-white rounded shadow-sm">
-          <p class="text-muted mb-3">Aún no hay libros registrados en el catálogo.</p>
+        <!-- Vacío o sin coincidencias -->
+        <div v-else class="text-center py-5 bg-white rounded shadow-sm px-3">
+          <p class="text-muted mb-3">
+            {{
+              hayBusquedaActiva
+                ? `No se encontraron libros que coincidan con "${busquedaGeneral}".`
+                : 'Aún no hay libros registrados en el catálogo.'
+            }}
+          </p>
           <Button
+            v-if="hayBusquedaActiva"
+            label="Limpiar búsqueda"
+            icon="pi pi-refresh"
+            class="text-white btn-home-primary"
+            @click="limpiarBusqueda"
+          />
+          <Button
+            v-else
             label="Ir a Libros"
             icon="pi pi-book"
             class="text-white btn-home-primary"
@@ -252,6 +376,11 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.home-search-card {
+  border-radius: 12px;
+  border-left: 4px solid #4b3049 !important;
+}
+
 .book-grid-card {
   border-radius: 12px;
   overflow: hidden;
@@ -330,6 +459,16 @@ onMounted(() => {
 .btn-home-outline {
   color: #4b3049 !important;
   border-color: #4b3049 !important;
+}
+
+.btn-filter-pill {
+  color: #4b3049 !important;
+  border-color: #4b3049 !important;
+}
+
+.btn-filter-pill:not(.p-button-outlined) {
+  background-color: #4b3049 !important;
+  color: #ffffff !important;
 }
 
 .custom-spinner {
