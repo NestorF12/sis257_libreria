@@ -3,7 +3,7 @@ import DefaultLayout from '@/components/layouts/DefaultLayout.vue'
 import { useAuthStore } from '@/stores/index'
 import { getTokenFromLocalStorage } from '@/helpers/index'
 
-// Importa tus vistas del CRUD
+import HomeView from '@/views/HomeView.vue'
 import LibrosView from '@/views/LibroView.vue'
 import AutoresView from '@/views/AutorView.vue'
 import CategoriasView from '@/views/CategoriaView.vue'
@@ -11,69 +11,112 @@ import UsuarioView from '@/views/UsuarioView.vue'
 import VentasView from '@/views/VentaView.vue'
 import DetalleVentasView from '@/views/DetalleVentaView.vue'
 import LoginView from '@/views/LoginView.vue'
+import CarritoView from '@/views/CarritoView.vue'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    roles?: string[]
+    public?: boolean
+  }
+}
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
-      component: DefaultLayout, // 👈 La ruta padre usa el layout con el diseño de la plantilla
+      component: DefaultLayout,
       children: [
         {
           path: '',
-          redirect: '/libros', // Si entran a la raíz '/', los manda directo a libros
+          name: 'home',
+          component: HomeView,
+          meta: { public: true },
+        },
+        {
+          path: 'home',
+          redirect: { name: 'home' },
         },
         {
           path: 'libros',
           name: 'libros',
           component: LibrosView,
+          meta: { roles: ['vendedor', 'comprador'] },
         },
         {
           path: 'autores',
           name: 'autores',
           component: AutoresView,
+          meta: { roles: ['vendedor', 'comprador'] },
         },
         {
           path: 'categorias',
           name: 'categorias',
           component: CategoriasView,
+          meta: { roles: ['vendedor', 'comprador'] },
         },
         {
-          path: 'usuarios', // Sin barra '/' al inicio porque es ruta hija
-          name: 'usuarios',
-          component: UsuarioView,
+          path: 'carrito',
+          name: 'carrito',
+          component: CarritoView,
+          meta: { roles: ['comprador'] },
         },
         {
-          path: 'ventas', // Sin barra '/' al inicio
+          path: 'ventas',
           name: 'ventas',
           component: VentasView,
+          meta: { roles: ['vendedor', 'comprador'] },
         },
         {
-          path: 'detalle-ventas', // Sin barra '/' al inicio
+          path: 'detalle-ventas',
           name: 'detalle-ventas',
           component: DetalleVentasView,
+          meta: { roles: ['vendedor', 'comprador'] },
+        },
+        {
+          path: 'usuarios',
+          name: 'usuarios',
+          component: UsuarioView,
+          meta: { roles: ['vendedor'] },
         },
       ],
     },
-    // Vista de Login fuera del layout principal para que ocupe toda la pantalla
     {
       path: '/login',
       name: 'login',
       component: LoginView,
+      meta: { public: true },
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: { name: 'home' },
     },
   ],
 })
 
-// Guardia de navegación global para proteger rutas privadas
-router.beforeEach(async (to) => {
-  const publicPages = ['/login']
-  const authRequired = !publicPages.includes(to.path)
+router.beforeEach((to) => {
   const authStore = useAuthStore()
+  const token = authStore.token || getTokenFromLocalStorage()
+  const isPublic = to.meta.public === true
 
-  if (authRequired && !getTokenFromLocalStorage()) {
-    if (authStore) authStore.logout()
+  // 1. Si no es Home ni Login y no hay sesión -> ir a Iniciar Sesión
+  if (!isPublic && !token) {
     authStore.returnUrl = to.fullPath
-    return '/login'
+    return { name: 'login' }
+  }
+
+  // 2. Si ya inició sesión e intenta entrar a /login -> ir a Home
+  if (to.name === 'login' && token) {
+    return { name: 'home' }
+  }
+
+  // 3. Validar rol en rutas protegidas
+  const allowedRoles = to.meta.roles
+  if (Array.isArray(allowedRoles) && allowedRoles.length > 0 && token) {
+    const userRole = authStore.rol
+    if (!userRole || !allowedRoles.includes(userRole)) {
+      return { name: 'home' }
+    }
   }
 })
 

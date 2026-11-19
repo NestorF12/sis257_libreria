@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/index'
+import { useCarritoStore } from '@/stores/carrito'
 
-// Rutas de tus 3 imágenes de fondo en la carpeta public/img/
 const imagenesFondo = ['/img/fondo_1.jpg', '/img/fondo_2.jpg', '/img/fondo_3.jpg']
 const authStore = useAuthStore()
+const carritoStore = useCarritoStore()
 const indiceActual = ref(0)
 let intervalo: ReturnType<typeof setInterval> | null = null
 
-// Cambia de imagen automáticamente cada 5 segundos (5000 ms)
 onMounted(() => {
   intervalo = setInterval(() => {
     indiceActual.value = (indiceActual.value + 1) % imagenesFondo.length
@@ -31,14 +31,12 @@ onUnmounted(() => {
         :class="{ active: indiceActual === index }"
         :style="{ backgroundImage: `url(${img})` }"
       ></div>
-      <!-- Capa semi-transparente que se solapa encima de las imágenes -->
       <div class="bg-overlay"></div>
     </div>
 
     <!--::header part start::-->
     <header class="custom-navbar w-100">
       <div class="container mx-auto px-3 px-md-4">
-        <!-- Contenedor flexible centrado -->
         <div class="d-flex flex-wrap justify-content-between align-items-center py-3 gap-3">
           <!-- 1. Título / Logotipo -->
           <router-link
@@ -56,8 +54,16 @@ onUnmounted(() => {
               style="list-style: none"
             >
               <li class="nav-item">
-                <router-link class="nav-link px-2" to="/">Home</router-link>
+                <router-link
+                  class="nav-link px-2"
+                  exact-active-class="router-link-exact-active"
+                  to="/"
+                >
+                  Home
+                </router-link>
               </li>
+
+              <!-- Pestañas protegidas: visibles al iniciar sesión o redirigen a /login si se intenta entrar -->
               <li class="nav-item">
                 <router-link class="nav-link px-2" to="/libros">Libros</router-link>
               </li>
@@ -67,42 +73,77 @@ onUnmounted(() => {
               <li class="nav-item">
                 <router-link class="nav-link px-2" to="/categorias">Categorías</router-link>
               </li>
-              <li class="nav-item">
+
+              <!-- Opciones exclusivas de "vendedor" -->
+              <li v-if="authStore.isVendedor" class="nav-item">
                 <router-link class="nav-link px-2" to="/usuarios">Usuarios</router-link>
               </li>
-              <li class="nav-item">
+              <li v-if="authStore.isVendedor" class="nav-item">
                 <router-link class="nav-link px-2" to="/ventas">Ventas</router-link>
               </li>
-              <li class="nav-item">
+              <li v-if="authStore.isVendedor" class="nav-item">
                 <router-link class="nav-link px-2" to="/detalle-ventas">Detalle Ventas</router-link>
+              </li>
+
+              <!-- Opciones orientadas a "comprador" -->
+              <li v-if="authStore.isComprador" class="nav-item">
+                <router-link
+                  class="nav-link px-2 d-inline-flex align-items-center gap-1"
+                  to="/carrito"
+                >
+                  <span>Carrito</span>
+                  <span v-if="carritoStore.cantidadTotal > 0" class="badge rounded-pill cart-badge">
+                    {{ carritoStore.cantidadTotal }}
+                  </span>
+                </router-link>
+              </li>
+              <li v-if="authStore.isComprador" class="nav-item">
+                <router-link class="nav-link px-2" to="/ventas">Mis Compras</router-link>
               </li>
             </ul>
           </nav>
 
-          <!-- 3. Icono del carrito y Acciones de usuario integradas -->
+          <!-- 3. Acciones de sesión y carrito -->
           <div class="hearer_icon d-flex align-items-center gap-3">
-            <router-link to="/libros" class="text-dark fs-5">
+            <router-link
+              v-if="authStore.isComprador"
+              to="/carrito"
+              class="text-dark fs-5 position-relative text-decoration-none d-inline-flex align-items-center"
+              title="Ver carrito"
+            >
               <i class="flaticon-shopping-cart-black-shape"></i>
+              <span
+                v-if="carritoStore.cantidadTotal > 0"
+                class="badge rounded-pill cart-badge ms-1"
+              >
+                {{ carritoStore.cantidadTotal }}
+              </span>
             </router-link>
 
-            <span v-if="authStore.user" class="fw-bold">
-              Hola, {{ authStore.user.nombre }} ({{ authStore.user.rol }})
-            </span>
+            <template v-if="authStore.token">
+              <span v-if="authStore.user" class="fw-bold">
+                Hola, {{ authStore.user.nombre }} ({{ authStore.rol ?? authStore.user.rol }})
+              </span>
 
-            <button
-              v-if="authStore.token"
-              @click="authStore.logout()"
-              class="btn btn-danger btn-sm"
+              <button @click="authStore.logout()" class="btn btn-danger btn-sm">
+                Cerrar Sesión
+              </button>
+            </template>
+
+            <router-link
+              v-else
+              to="/login"
+              class="btn btn-sm text-white fw-semibold px-3 py-2 btn-login-nav"
             >
-              Cerrar Sesión
-            </button>
+              Iniciar Sesión
+            </router-link>
           </div>
         </div>
       </div>
     </header>
     <!-- Header part end-->
 
-    <!-- Main Content: Centrado horizontalmente en cualquier pantalla -->
+    <!-- Main Content -->
     <main class="main-content flex-fill my-4 w-100">
       <div class="container mx-auto px-3 px-md-4">
         <router-view />
@@ -128,7 +169,6 @@ onUnmounted(() => {
   </div>
 </template>
 
-<!-- Reseteo global limpio para evitar que Vite/Vue empuje el contenido a un lado -->
 <style>
 html,
 body {
@@ -155,7 +195,6 @@ body {
   position: relative;
 }
 
-/* Cabecera de ancho completo */
 .custom-navbar {
   width: 100%;
   background-color: #ffffff;
@@ -165,7 +204,6 @@ body {
   z-index: 10;
 }
 
-/* Estilos de los enlaces del menú */
 .navbar-nav .nav-link {
   color: #4b3049 !important;
   font-weight: 600;
@@ -174,11 +212,30 @@ body {
 }
 
 .navbar-nav .nav-link:hover,
-.navbar-nav .router-link-active {
+.navbar-nav .router-link-exact-active {
   color: #b08ead !important;
 }
 
-/* Carrusel de fondo fijo */
+.btn-login-nav {
+  background-color: #4b3049;
+  border-color: #4b3049;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.btn-login-nav:hover {
+  background-color: #b08ead;
+  border-color: #b08ead;
+  color: #ffffff;
+}
+
+.cart-badge {
+  background-color: #4b3049;
+  color: #ffffff;
+  font-size: 0.75rem;
+  padding: 0.25em 0.5em;
+}
+
 .background-slideshow {
   position: fixed;
   top: 0;

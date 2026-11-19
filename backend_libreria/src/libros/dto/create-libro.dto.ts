@@ -1,12 +1,13 @@
-import { 
-    IsNotEmpty, 
-    IsString, 
-    IsNumber, 
-    IsInt,
-    Min,
-    MaxLength 
+import {
+  IsNotEmpty,
+  IsString,
+  IsNumber,
+  IsInt,
+  IsOptional,
+  Min,
+  MaxLength,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateLibroDto {
   @ApiProperty({ example: 'Cien años de soledad', description: 'Título del libro' })
@@ -21,7 +22,16 @@ export class CreateLibroDto {
   @MaxLength(20, { message: 'El ISBN no puede tener más de 20 caracteres' })
   isbn: string;
 
-  @ApiProperty({ example: 15.50, description: 'Precio unitario del libro' })
+  @ApiPropertyOptional({
+    example: 'https://ejemplo.com/portada-libro.jpg',
+    description: 'URL de la portada del libro',
+  })
+  @IsOptional()
+  @IsString({ message: 'La portada debe ser una URL válida en texto' })
+  @MaxLength(500, { message: 'La URL de portada no puede superar los 500 caracteres' })
+  portada?: string;
+
+  @ApiProperty({ example: 15.5, description: 'Precio unitario del libro' })
   @IsNumber({}, { message: 'El precio debe ser un valor numérico' })
   @Min(0, { message: 'El precio no puede ser negativo' })
   @IsNotEmpty({ message: 'El precio es obligatorio' })

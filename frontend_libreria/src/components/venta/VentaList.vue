@@ -1,13 +1,22 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import http from '@/plugins/axios'
 import Button from 'primevue/button'
 import type { Venta } from '@/models/venta'
+import { useAuthStore } from '@/stores/index'
 
 const ENDPOINT = 'ventas'
+const authStore = useAuthStore()
 const ventas = ref<Venta[]>([])
 const loading = ref<boolean>(true)
 const errorMessage = ref<string | null>(null)
+
+const ventasVisibles = computed(() => {
+  if (authStore.isVendedor) return ventas.value
+  const userId = authStore.user?.id
+  if (!userId) return []
+  return ventas.value.filter((venta) => venta.usuarioId === userId || venta.usuario?.id === userId)
+})
 
 async function obtenerLista() {
   try {
@@ -31,6 +40,7 @@ async function obtenerLista() {
 }
 
 async function eliminar(id: number) {
+  if (!authStore.isVendedor) return
   if (confirm('¿Está seguro que desea anular/eliminar esta venta?')) {
     try {
       await http.delete(`${ENDPOINT}/${id}`)
@@ -54,7 +64,9 @@ defineExpose({ obtenerLista })
       <div
         class="card-header text-white d-flex justify-content-between align-items-center py-3 px-4 custom-card-header"
       >
-        <span class="fw-bold">Ventas Registradas</span>
+        <span class="fw-bold">
+          {{ authStore.isVendedor ? 'Ventas Registradas' : 'Mis Compras Registradas' }}
+        </span>
         <Button
           label="Actualizar lista"
           icon="pi pi-refresh"
@@ -85,12 +97,12 @@ defineExpose({ obtenerLista })
                 <th>Total (Bs)</th>
                 <th>Estado</th>
                 <th>Detalle de Libros</th>
-                <th class="text-center">Acciones</th>
+                <th v-if="authStore.isVendedor" class="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              <template v-if="ventas && ventas.length > 0">
-                <tr v-for="(venta, index) in ventas" :key="venta.id || index">
+              <template v-if="ventasVisibles.length > 0">
+                <tr v-for="(venta, index) in ventasVisibles" :key="venta.id || index">
                   <td>#{{ venta.id }}</td>
                   <td class="fw-bold" style="color: #4b3049">
                     {{ venta.usuario?.nombre || 'Usuario ID: ' + venta.usuarioId }}
@@ -98,7 +110,9 @@ defineExpose({ obtenerLista })
                   <td>
                     {{ venta.fechaVenta ? new Date(venta.fechaVenta).toLocaleString() : 'S/F' }}
                   </td>
-                  <td class="fw-bold text-success">Bs. {{ venta.total }}</td>
+                  <td class="fw-bold text-success">
+                    Bs. {{ Number(venta.total ?? 0).toFixed(2) }}
+                  </td>
                   <td>
                     <span class="badge bg-success" style="color: #ffffff !important">
                       {{ venta.estado || 'completado' }}
@@ -106,14 +120,17 @@ defineExpose({ obtenerLista })
                   </td>
                   <td>
                     <ul class="list-unstyled mb-0 small text-muted">
-                      <li v-for="det in venta.detalles" :key="det.id">
-                        • <strong>{{ det.libro?.titulo || 'Libro #' + det.libroId }}</strong> (x{{
+                      <li
+                        v-for="(det, detIdx) in venta.detalles"
+                        :key="det.id ?? `${venta.id}-${det.libroId}-${detIdx}`"
+                      >
+                        - <strong>{{ det.libro?.titulo || 'Libro #' + det.libroId }}</strong> (x{{
                           det.cantidad
-                        }}) - Bs. {{ det.subtotal }}
+                        }}) - Bs. {{ Number(det.subtotal ?? 0).toFixed(2) }}
                       </li>
                     </ul>
                   </td>
-                  <td class="text-center text-nowrap">
+                  <td v-if="authStore.isVendedor" class="text-center text-nowrap">
                     <Button
                       icon="pi pi-trash"
                       aria-label="Eliminar"
@@ -125,7 +142,13 @@ defineExpose({ obtenerLista })
                 </tr>
               </template>
               <tr v-else>
-                <td colspan="7" class="text-center text-muted py-4">No hay ventas registradas.</td>
+                <td :colspan="authStore.isVendedor ? 7 : 6" class="text-center text-muted py-4">
+                  {{
+                    authStore.isVendedor
+                      ? 'No hay ventas registradas.'
+                      : 'Aún no tienes compras registradas.'
+                  }}
+                </td>
               </tr>
             </tbody>
           </table>

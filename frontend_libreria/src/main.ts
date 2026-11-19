@@ -12,17 +12,23 @@ import '@/assets/css/style.css' // O el archivo principal de estilos de la plant
 import App from './App.vue'
 import router from './router'
 
+const licenseKey =
+  typeof import.meta.env.VITE_LICENSE_KEY === 'string'
+    ? import.meta.env.VITE_LICENSE_KEY.trim()
+    : ''
+
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
 app.use(PrimeVue, {
+  ...(licenseKey ? { license: licenseKey } : {}),
   theme: {
     preset: Aura,
     options: {
       prefix: 'p',
       darkModeSelector: 'system',
-      cssLayer: false, //no tendrá capas de css
+      cssLayer: false, // no tendrá capas de css
     },
   },
 })

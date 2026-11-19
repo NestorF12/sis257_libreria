@@ -5,6 +5,7 @@ export interface Libro {
   id?: number
   titulo: string
   isbn?: string
+  portada?: string | null
   precio: number
   stock: number
   categoriaId: number

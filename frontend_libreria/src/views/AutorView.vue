@@ -4,17 +4,22 @@ import AutorForm from '@/components/autor/AutorForm.vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { ref } from 'vue'
+import { useAuthStore } from '@/stores/index'
+import type { Autor } from '@/models/autor'
 
 const mostrarDialog = ref(false)
-const autorListRef = ref<any | null>(null)
-const autorEdit = ref<any>(null)
+const autorListRef = ref<InstanceType<typeof AutorList> | null>(null)
+const autorEdit = ref<Autor | null>(null)
+const authStore = useAuthStore()
 
 function handleCreate() {
+  if (!authStore.isVendedor) return
   autorEdit.value = null
   mostrarDialog.value = true
 }
 
-function handleEdit(autor: any) {
+function handleEdit(autor: Autor) {
+  if (!authStore.isVendedor) return
   autorEdit.value = autor
   mostrarDialog.value = true
 }
@@ -49,13 +54,17 @@ function handleGuardar() {
     <!-- 2. Contenedor principal con ancho completo -->
     <section class="product_list pb-5">
       <div class="container-fluid px-0">
-        <!-- Fila 1: Botón Nuevo Autor alineado arriba -->
+        <!-- Fila 1: Cabecera y botón Nuevo Autor alineado arriba (solo vendedor) -->
         <div class="row mb-4">
           <div
             class="col-12 d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm"
           >
-            <h4 class="m-0 fw-bold" style="color: #4b3049">Gestión de Autores</h4>
+            <h4 class="m-0 fw-bold" style="color: #4b3049">
+              {{ authStore.isVendedor ? 'Gestión de Autores' : 'Directorio de Autores' }}
+            </h4>
+
             <Button
+              v-if="authStore.isVendedor"
               label="Nuevo Autor"
               icon="pi pi-plus"
               class="text-white px-4 py-2 btn-custom-pillomart"
@@ -84,8 +93,9 @@ function handleGuardar() {
       </div>
     </section>
 
-    <!-- Diálogo / Modal para Crear y Editar -->
+    <!-- Diálogo / Modal para Crear y Editar (solo vendedor) -->
     <Dialog
+      v-if="authStore.isVendedor"
       v-model:visible="mostrarDialog"
       :header="autorEdit ? 'Editar Autor' : 'Crear Nuevo Autor'"
       :style="{ width: '50vw' }"
@@ -98,7 +108,6 @@ function handleGuardar() {
 </template>
 
 <style scoped>
-/* Color personalizado del botón y efecto hover */
 .btn-custom-pillomart {
   background-color: #b08ead !important;
   border-color: #b08ead !important;
@@ -110,7 +119,6 @@ function handleGuardar() {
   border-color: #4b3049 !important;
 }
 
-/* Asegura que la tabla interna se adapte al ancho sin barras de scroll innecesarias */
 .table-wrapper :deep(.p-datatable-wrapper) {
   overflow-x: visible !important;
 }

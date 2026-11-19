@@ -17,24 +17,40 @@ const props = defineProps<{
 
 const emit = defineEmits(['saved', 'close'])
 
-// Estado reactivo del formulario (actualizado con categoriaId e autorId)
-const form = ref<Partial<Libro>>({
+interface LibroFormState {
+  id?: number
+  titulo: string
+  isbn: string
+  portada: string
+  precio: number
+  stock: number
+  categoriaId?: number
+  autorId?: number
+}
+
+const form = ref<LibroFormState>({
   titulo: '',
   isbn: '',
+  portada: '',
   precio: 0,
   stock: 0,
   categoriaId: undefined,
   autorId: undefined,
 })
 
-// Listas para los Selects (Llaves foráneas)
 const categorias = ref<Categoria[]>([])
 const autores = ref<Autor[]>([])
-
+const previewError = ref(false)
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
 
-// Cargar categorías y autores para los selects
+watch(
+  () => form.value.portada,
+  () => {
+    previewError.value = false
+  },
+)
+
 async function cargarCatalogos() {
   try {
     const [resCategorias, resAutores] = await Promise.all([
@@ -45,22 +61,23 @@ async function cargarCatalogos() {
       ? resCategorias.data
       : resCategorias.data?.data || []
     autores.value = Array.isArray(resAutores.data) ? resAutores.data : resAutores.data?.data || []
-
-    console.log('Categorías cargadas', categorias.value)
-    console.log('Autores cargados', autores.value)
   } catch (error) {
     console.error('Error al cargar catálogos:', error)
   }
 }
 
-// Sincronizar datos si estamos editando
 watch(
   () => props.libroEdit,
   (newVal) => {
+    previewError.value = false
     if (newVal) {
       form.value = {
-        ...newVal,
-        // Aseguramos extraer los IDs correctamente ya sea que vengan planos o como objetos anidados
+        id: newVal.id,
+        titulo: newVal.titulo ?? '',
+        isbn: newVal.isbn ?? '',
+        portada: newVal.portada ?? '',
+        precio: Number(newVal.precio ?? 0),
+        stock: Number(newVal.stock ?? 0),
         categoriaId: newVal.categoria?.id ?? newVal.categoriaId,
         autorId: newVal.autor?.id ?? newVal.autorId,
       }
@@ -68,6 +85,7 @@ watch(
       form.value = {
         titulo: '',
         isbn: '',
+        portada: '',
         precio: 0,
         stock: 0,
         categoriaId: undefined,
@@ -87,16 +105,33 @@ async function guardar() {
     loading.value = true
     errorMessage.value = null
 
+    const portadaLimpia = form.value.portada.trim()
+    const payload = {
+      titulo: form.value.titulo.trim(),
+      isbn: form.value.isbn.trim(),
+      portada: portadaLimpia || undefined,
+      precio: Number(form.value.precio ?? 0),
+      stock: Number(form.value.stock ?? 0),
+      categoriaId: Number(form.value.categoriaId),
+      autorId: Number(form.value.autorId),
+    }
+
     if (form.value.id) {
-      await http.patch(`${ENDPOINT}/${form.value.id}`, form.value)
+      await http.patch(`${ENDPOINT}/${form.value.id}`, payload)
     } else {
-      await http.post(ENDPOINT, form.value)
+      await http.post(ENDPOINT, payload)
     }
 
     emit('saved')
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error al guardar el libro:', error)
-    errorMessage.value = 'Ocurrió un error al intentar guardar el libro.'
+    const axiosError = error as { response?: { data?: { message?: string | string[] } } }
+    const msg = axiosError?.response?.data?.message
+    errorMessage.value = Array.isArray(msg)
+      ? msg.join(', ')
+      : typeof msg === 'string'
+        ? msg
+        : 'Ocurrió un error al intentar guardar el libro.'
   } finally {
     loading.value = false
   }
@@ -123,25 +158,55 @@ async function guardar() {
     <!-- ISBN -->
     <div class="field mb-3">
       <label for="isbn" class="form-label fw-bold">ISBN</label>
-      <InputText id="isbn" v-model="form.isbn" placeholder="Ej. 978-3-16-148410-0" />
+      <InputText id="isbn" v-model="form.isbn" required placeholder="Ej. 978-3-16-148410-0" />
     </div>
 
-    <!-- Precio y Stock (Fila doble) -->
-    <div class="col-md-6 field mb-3">
-      <label for="precio" class="form-label fw-bold">Precio (Bs)</label>
-      <InputNumber
-        id="precio"
-        v-model="form.precio"
-        prefix="Bs. "
-        :minFractionDigits="2"
-        :maxFractionDigits="2"
-        :min="0"
-        required
+    <!-- URL de Portada -->
+    <div class="field mb-3">
+      <label for="portada" class="form-label fw-bold">URL de Portada</label>
+      <InputText
+        id="portada"
+        v-model="form.portada"
+        type="url"
+        placeholder="https://ejemplo.com/portada.jpg"
       />
+      <div v-if="form.portada.trim()" class="mt-2 d-flex align-items-center gap-3">
+        <img
+          v-if="!previewError"
+          :src="form.portada.trim()"
+          alt="Vista previa de portada"
+          class="rounded border"
+          style="width: 56px; height: 78px; object-fit: cover"
+          @error="previewError = true"
+        />
+        <small class="text-muted">
+          {{
+            previewError
+              ? 'No se pudo cargar la vista previa de esta URL.'
+              : 'Vista previa de la portada'
+          }}
+        </small>
+      </div>
     </div>
-    <div class="col-md-6 field mb-3">
-      <label for="stock" class="form-label fw-bold">Stock</label>
-      <InputNumber id="stock" v-model="form.stock" :min="0" required />
+
+    <!-- Precio y Stock -->
+    <div class="row">
+      <div class="col-md-6 field mb-3">
+        <label for="precio" class="form-label fw-bold">Precio (Bs)</label>
+        <InputNumber
+          id="precio"
+          v-model="form.precio"
+          prefix="Bs. "
+          :minFractionDigits="2"
+          :maxFractionDigits="2"
+          :min="0"
+          required
+        />
+      </div>
+      <div class="col-md-6 field mb-3">
+        <label for="stock" class="form-label fw-bold">Stock</label>
+        <InputNumber id="stock" v-model="form.stock" :min="0" required />
+      </div>
     </div>
 
     <!-- Categoría -->

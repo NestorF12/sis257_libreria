@@ -4,17 +4,21 @@ import CategoriaForm from '@/components/categoria/CategoriaForm.vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { ref } from 'vue'
+import { useAuthStore } from '@/stores/index'
 
 const mostrarDialog = ref(false)
 const categoriaListRef = ref<any | null>(null)
 const categoriaEdit = ref<any>(null)
+const authStore = useAuthStore()
 
 function handleCreate() {
+  if (!authStore.isVendedor) return
   categoriaEdit.value = null
   mostrarDialog.value = true
 }
 
 function handleEdit(categoria: any) {
+  if (!authStore.isVendedor) return
   categoriaEdit.value = categoria
   mostrarDialog.value = true
 }
@@ -49,13 +53,17 @@ function handleGuardar() {
     <!-- 2. Contenedor principal con ancho completo -->
     <section class="product_list pb-5">
       <div class="container-fluid px-0">
-        <!-- Fila 1: Botón Nueva Categoría alineado arriba -->
+        <!-- Fila 1: Cabecera y botón Nueva Categoría alineado arriba (solo vendedor) -->
         <div class="row mb-4">
           <div
             class="col-12 d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm"
           >
-            <h4 class="m-0 fw-bold" style="color: #4b3049">Gestión de Categorías</h4>
+            <h4 class="m-0 fw-bold" style="color: #4b3049">
+              {{ authStore.isVendedor ? 'Gestión de Categorías' : 'Categorías Disponibles' }}
+            </h4>
+
             <Button
+              v-if="authStore.isVendedor"
               label="Nueva Categoría"
               icon="pi pi-plus"
               class="text-white px-4 py-2 btn-custom-pillomart"
@@ -84,8 +92,9 @@ function handleGuardar() {
       </div>
     </section>
 
-    <!-- Diálogo / Modal para Crear y Editar -->
+    <!-- Diálogo / Modal para Crear y Editar (solo vendedor) -->
     <Dialog
+      v-if="authStore.isVendedor"
       v-model:visible="mostrarDialog"
       :header="categoriaEdit ? 'Editar Categoría' : 'Crear Nueva Categoría'"
       :style="{ width: '50vw' }"

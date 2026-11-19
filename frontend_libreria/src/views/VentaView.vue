@@ -4,12 +4,14 @@ import VentaForm from '@/components/venta/VentaForm.vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { ref } from 'vue'
+import { useAuthStore } from '@/stores/index'
 
+const authStore = useAuthStore()
 const mostrarDialog = ref(false)
-// Tipado seguro de la referencia sin usar 'any'
 const ventaListRef = ref<InstanceType<typeof VentaList> | null>(null)
 
 function handleCreate() {
+  if (!authStore.isVendedor) return
   mostrarDialog.value = true
 }
 
@@ -31,7 +33,7 @@ function handleGuardar() {
         <div class="row">
           <div class="col-lg-12">
             <div class="breadcrumb_iner" style="height: auto; min-height: unset; padding: 0">
-              <h2 class="mb-0">Ventas</h2>
+              <h2 class="mb-0">{{ authStore.isVendedor ? 'Ventas' : 'Mis Compras' }}</h2>
             </div>
           </div>
         </div>
@@ -41,13 +43,16 @@ function handleGuardar() {
     <!-- 2. Contenedor principal con ancho completo -->
     <section class="product_list pb-5">
       <div class="container-fluid px-0">
-        <!-- Fila 1: Botón Nueva Venta alineado arriba -->
+        <!-- Fila 1: Cabecera y botón Nueva Venta (solo vendedor) -->
         <div class="row mb-4">
           <div
             class="col-12 d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm"
           >
-            <h4 class="m-0 fw-bold" style="color: #4b3049">Gestión de Ventas</h4>
+            <h4 class="m-0 fw-bold" style="color: #4b3049">
+              {{ authStore.isVendedor ? 'Gestión de Ventas' : 'Historial de Compras' }}
+            </h4>
             <Button
+              v-if="authStore.isVendedor"
               label="Nueva Venta"
               icon="pi pi-plus"
               class="text-white px-4 py-2 btn-custom-pillomart"
@@ -76,8 +81,9 @@ function handleGuardar() {
       </div>
     </section>
 
-    <!-- Diálogo / Modal para Registrar Nueva Venta -->
+    <!-- Diálogo / Modal para Registrar Nueva Venta (solo vendedor) -->
     <Dialog
+      v-if="authStore.isVendedor"
       v-model:visible="mostrarDialog"
       header="Registrar Nueva Venta"
       :style="{ width: '55vw' }"

@@ -13,7 +13,12 @@ const props = defineProps<{
 
 const emit = defineEmits(['saved', 'close'])
 
-const form = ref<Partial<Autor>>({
+const form = ref<{
+  id?: number
+  nombre: string
+  apellido: string
+  nacionalidad: string
+}>({
   nombre: '',
   apellido: '',
   nacionalidad: '',
@@ -26,7 +31,12 @@ watch(
   () => props.autorEdit,
   (newVal) => {
     if (newVal) {
-      form.value = { ...newVal }
+      form.value = {
+        id: newVal.id,
+        nombre: newVal.nombre ?? '',
+        apellido: newVal.apellido ?? '',
+        nacionalidad: newVal.nacionalidad ?? '',
+      }
     } else {
       form.value = {
         nombre: '',
@@ -43,10 +53,16 @@ async function guardar() {
     loading.value = true
     errorMessage.value = null
 
+    const payload = {
+      nombre: form.value.nombre.trim(),
+      apellido: form.value.apellido.trim(),
+      nacionalidad: form.value.nacionalidad.trim() || undefined,
+    }
+
     if (form.value.id) {
-      await http.patch(`${ENDPOINT}/${form.value.id}`, form.value)
+      await http.patch(`${ENDPOINT}/${form.value.id}`, payload)
     } else {
-      await http.post(ENDPOINT, form.value)
+      await http.post(ENDPOINT, payload)
     }
 
     emit('saved')

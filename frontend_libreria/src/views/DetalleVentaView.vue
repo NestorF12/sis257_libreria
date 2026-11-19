@@ -1,13 +1,22 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import http from '@/plugins/axios'
 import Button from 'primevue/button'
 import type { Venta } from '@/models/venta'
+import { useAuthStore } from '@/stores/index'
 
 const ENDPOINT = 'ventas'
+const authStore = useAuthStore()
 const ventas = ref<Venta[]>([])
 const loading = ref<boolean>(true)
 const errorMessage = ref<string | null>(null)
+
+const ventasVisibles = computed(() => {
+  if (authStore.isVendedor) return ventas.value
+  const userId = authStore.user?.id
+  if (!userId) return []
+  return ventas.value.filter((venta) => venta.usuarioId === userId || venta.usuario?.id === userId)
+})
 
 async function obtenerLista() {
   try {
@@ -15,7 +24,6 @@ async function obtenerLista() {
     errorMessage.value = null
     const response = await http.get(ENDPOINT)
 
-    // Extracción segura del arreglo (igual que en tus otros componentes)
     if (Array.isArray(response.data)) {
       ventas.value = response.data
     } else if (response.data && Array.isArray(response.data.data)) {
@@ -59,7 +67,13 @@ onMounted(() => {
           <div
             class="col-12 d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm"
           >
-            <h4 class="m-0 fw-bold" style="color: #4b3049">Desglose Analítico de Ítems Vendidos</h4>
+            <h4 class="m-0 fw-bold" style="color: #4b3049">
+              {{
+                authStore.isVendedor
+                  ? 'Desglose Analítico de Ítems Vendidos'
+                  : 'Desglose de Tus Compras'
+              }}
+            </h4>
             <Button
               label="Actualizar Lista"
               icon="pi pi-refresh"
@@ -106,22 +120,26 @@ onMounted(() => {
                     </tr>
                   </thead>
                   <tbody>
-                    <template v-if="ventas && ventas.length > 0">
-                      <!-- Recorremos cada venta y luego aplanamos sus detalles -->
-                      <template v-for="venta in ventas" :key="venta.id">
-                        <tr v-for="detalle in venta.detalles" :key="detalle.id">
+                    <template v-if="ventasVisibles.length > 0">
+                      <template v-for="venta in ventasVisibles" :key="venta.id">
+                        <tr
+                          v-for="(detalle, idx) in venta.detalles"
+                          :key="detalle.id ?? `${venta.id}-${detalle.libroId}-${idx}`"
+                        >
                           <td class="fw-bold">#{{ venta.id }}</td>
                           <td>{{ venta.usuario?.nombre || 'Usuario ID: ' + venta.usuarioId }}</td>
                           <td class="fw-bold" style="color: #4b3049">
                             {{ detalle.libro?.titulo || 'Libro ID: ' + detalle.libroId }}
                           </td>
-                          <td>Bs. {{ detalle.precioUnitario }}</td>
+                          <td>Bs. {{ Number(detalle.precioUnitario ?? 0).toFixed(2) }}</td>
                           <td>
                             <span class="badge bg-secondary text-white">
                               {{ detalle.cantidad }}
                             </span>
                           </td>
-                          <td class="fw-bold text-success">Bs. {{ detalle.subtotal }}</td>
+                          <td class="fw-bold text-success">
+                            Bs. {{ Number(detalle.subtotal ?? 0).toFixed(2) }}
+                          </td>
                         </tr>
                       </template>
                     </template>
@@ -142,7 +160,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* Estilos alineados con la plantilla de MagnaBooks */
 .card {
   border-radius: 8px;
 }

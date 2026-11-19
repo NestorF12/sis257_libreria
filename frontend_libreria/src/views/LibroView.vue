@@ -4,17 +4,28 @@ import LibroForm from '@/components/libro/LibroForm.vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { ref } from 'vue'
+import { useAuthStore } from '@/stores/index'
+import { useCarritoStore } from '@/stores/carrito'
+import type { Libro } from '@/models/libro'
 
 const mostrarDialog = ref(false)
 const libroListRef = ref<any | null>(null)
 const libroEdit = ref<any>(null)
+const authStore = useAuthStore()
+const carritoStore = useCarritoStore()
+
+function handleAddToCart(libro: Libro) {
+  carritoStore.agregarLibro(libro, 1)
+}
 
 function handleCreate() {
+  if (!authStore.isVendedor) return
   libroEdit.value = null
   mostrarDialog.value = true
 }
 
 function handleEdit(libro: any) {
+  if (!authStore.isVendedor) return
   libroEdit.value = libro
   mostrarDialog.value = true
 }
@@ -49,13 +60,17 @@ function handleGuardar() {
     <!-- 2. Contenedor principal con ancho completo -->
     <section class="product_list pb-5">
       <div class="container-fluid px-0">
-        <!-- Fila 1: Botón Nuevo Libro alineado arriba -->
+        <!-- Fila 1: Cabecera de catálogo y botón Nuevo Libro (solo vendedor) -->
         <div class="row mb-4">
           <div
             class="col-12 d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm"
           >
-            <h4 class="m-0 fw-bold" style="color: #4b3049">Gestión de Catálogo</h4>
+            <h4 class="m-0 fw-bold" style="color: #4b3049">
+              {{ authStore.isVendedor ? 'Gestión de Catálogo' : 'Catálogo de Libros' }}
+            </h4>
+
             <Button
+              v-if="authStore.isVendedor"
               label="Nuevo Libro"
               icon="pi pi-plus"
               class="text-white px-4 py-2 btn-custom-pillomart"
@@ -76,7 +91,7 @@ function handleGuardar() {
 
               <!-- Componente Lista con todo el ancho disponible -->
               <div class="table-wrapper">
-                <LibroList ref="libroListRef" @edit="handleEdit" />
+                <LibroList ref="libroListRef" @edit="handleEdit" @add-to-cart="handleAddToCart" />
               </div>
             </div>
           </div>
@@ -84,8 +99,9 @@ function handleGuardar() {
       </div>
     </section>
 
-    <!-- Diálogo / Modal para Crear y Editar -->
+    <!-- Diálogo / Modal para Crear y Editar (solo vendedor) -->
     <Dialog
+      v-if="authStore.isVendedor"
       v-model:visible="mostrarDialog"
       :header="libroEdit ? 'Editar Libro' : 'Crear Nuevo Libro'"
       :style="{ width: '50vw' }"

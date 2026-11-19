@@ -2,13 +2,15 @@
 import { ref, onMounted } from 'vue'
 import http from '@/plugins/axios'
 import Button from 'primevue/button'
-import type { Categoria } from '@/models/categoria' // Asegúrate de tener tu modelo o ajusta según corresponda
+import type { Categoria } from '@/models/categoria'
+import { useAuthStore } from '@/stores/index'
 
-const ENDPOINT = 'categorias' // Ajusta el endpoint si tu API usa otro nombre (ej. 'categoria')
+const ENDPOINT = 'categorias'
 const categorias = ref<Categoria[]>([])
 const emit = defineEmits(['edit'])
 const loading = ref<boolean>(true)
 const errorMessage = ref<string | null>(null)
+const authStore = useAuthStore()
 
 async function obtenerLista() {
   try {
@@ -16,7 +18,6 @@ async function obtenerLista() {
     errorMessage.value = null
     const response = await http.get(ENDPOINT)
 
-    // Protección clave para extraer arreglos de manera segura del backend
     if (Array.isArray(response.data)) {
       categorias.value = response.data
     } else if (response.data && Array.isArray(response.data.data)) {
@@ -33,10 +34,12 @@ async function obtenerLista() {
 }
 
 function emitirEdicion(categoria: Categoria) {
+  if (!authStore.isVendedor) return
   emit('edit', categoria)
 }
 
 async function eliminar(id: number) {
+  if (!authStore.isVendedor) return
   if (confirm('¿Está seguro que desea eliminar el registro?')) {
     try {
       await http.delete(`${ENDPOINT}/${id}`)
@@ -57,7 +60,6 @@ defineExpose({ obtenerLista })
 <template>
   <div>
     <div class="card border-0">
-      <!-- Encabezado superior con el tono ciruela de la plantilla -->
       <div
         class="card-header text-white d-flex justify-content-between align-items-center py-3 px-4 custom-card-header"
       >
@@ -72,19 +74,16 @@ defineExpose({ obtenerLista })
       </div>
 
       <div class="card-body px-0 pb-0">
-        <!-- Estado de carga -->
         <div v-if="loading" class="text-center py-5">
           <div class="spinner-border custom-spinner" role="status">
             <span class="visually-hidden">Cargando...</span>
           </div>
         </div>
 
-        <!-- Mensaje de error -->
         <div v-else-if="errorMessage" class="alert alert-danger" role="alert">
           {{ errorMessage }}
         </div>
 
-        <!-- Tabla de datos sin scroll forzado -->
         <div v-else class="w-100">
           <table class="table table-hover align-middle mb-0 custom-table">
             <thead>
@@ -92,7 +91,7 @@ defineExpose({ obtenerLista })
                 <th>N°</th>
                 <th>Nombre</th>
                 <th>Descripción</th>
-                <th class="text-center">Acciones</th>
+                <th v-if="authStore.isVendedor" class="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -101,7 +100,7 @@ defineExpose({ obtenerLista })
                   <td>{{ index + 1 }}</td>
                   <td class="fw-bold" style="color: #4b3049">{{ categoria.nombre }}</td>
                   <td>{{ categoria.descripcion || 'Sin descripción' }}</td>
-                  <td class="text-center text-nowrap">
+                  <td v-if="authStore.isVendedor" class="text-center text-nowrap">
                     <Button
                       icon="pi pi-pencil"
                       aria-label="Editar"
@@ -120,7 +119,7 @@ defineExpose({ obtenerLista })
                 </tr>
               </template>
               <tr v-else>
-                <td colspan="4" class="text-center text-muted py-4">
+                <td :colspan="authStore.isVendedor ? 4 : 3" class="text-center text-muted py-4">
                   No hay registros disponibles.
                 </td>
               </tr>
@@ -137,13 +136,11 @@ defineExpose({ obtenerLista })
   border-radius: 8px;
 }
 
-/* Barra superior de la tabla en tono ciruela oscuro */
 .custom-card-header {
   background-color: #4b3049;
   border-radius: 8px 8px 0 0;
 }
 
-/* Botón de actualizar en lila suave */
 .btn-refresh-pillomart {
   background-color: #b08ead !important;
   border-color: #b08ead !important;
@@ -154,12 +151,10 @@ defineExpose({ obtenerLista })
   opacity: 0.85;
 }
 
-/* Spinner de carga armonizado */
 .custom-spinner {
   color: #b08ead;
 }
 
-/* Cabecera de la tabla en tono lila suave con texto oscuro */
 .custom-table thead th {
   background-color: #f4edf3;
   color: #4b3049;
@@ -167,12 +162,10 @@ defineExpose({ obtenerLista })
   font-weight: 700;
 }
 
-/* Efecto suave al pasar el mouse por una fila */
 .custom-table tbody tr:hover {
   background-color: #faf7fa;
 }
 
-/* Ícono de editar en tono lila/ciruela */
 .btn-edit-icon {
   color: #4b3049 !important;
 }

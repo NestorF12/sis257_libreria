@@ -1,38 +1,61 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  ParseIntPipe,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AutoresService } from './autores.service';
 import { CreateAutorDto } from './dto/create-autor.dto';
 import { UpdateAutorDto } from './dto/update-autor.dto';
-import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
+@ApiTags('autores')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('autores')
 export class AutoresController {
   constructor(private readonly autoresService: AutoresService) {}
 
-  @Post()
-  create(@Body() createAutorDto: CreateAutorDto) {
-    return this.autoresService.create(createAutorDto);
-  }
-
+  @UseGuards(JwtAuthGuard)
   @Get()
   findAll() {
     return this.autoresService.findAll();
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.autoresService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.autoresService.findOne(id);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('vendedor')
+  @Post()
+  create(@Body() createAutorDto: CreateAutorDto) {
+    return this.autoresService.create(createAutorDto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('vendedor')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAutorDto: UpdateAutorDto) {
-    return this.autoresService.update(+id, updateAutorDto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateAutorDto: UpdateAutorDto,
+  ) {
+    return this.autoresService.update(id, updateAutorDto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('vendedor')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.autoresService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.autoresService.remove(id);
   }
 }
