@@ -2,11 +2,14 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
-import { useCarritoStore } from '@/stores/carrito'
+import { useAuthStore, useCarritoStore } from '@/stores/index'
+import { descargarComprobantePng, type DatosComprobanteCompra } from '@/utils/comprobanteCompra'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const carritoStore = useCarritoStore()
 const compraExitosa = ref<string | null>(null)
+const ultimoComprobante = ref<DatosComprobanteCompra | null>(null)
 
 function incrementar(libroId: number, cantidadActual: number, stockMax?: number) {
   compraExitosa.value = null
@@ -33,11 +36,46 @@ function vaciarCarrito() {
 
 async function procesarCompra() {
   compraExitosa.value = null
+  ultimoComprobante.value = null
+
+  const snapshotItems = carritoStore.items.map((item) => {
+    const precioUnitario = Number(item.libro.precio ?? 0)
+    const cantidad = Number(item.cantidad ?? 1)
+    return {
+      titulo: item.libro.titulo ?? 'Libro',
+      cantidad,
+      precioUnitario,
+      subtotal: precioUnitario * cantidad,
+    }
+  })
+
+  const totalCalculado =
+    typeof carritoStore.totalPagar === 'number' && carritoStore.totalPagar > 0
+      ? Number(carritoStore.totalPagar)
+      : snapshotItems.reduce((acc, row) => acc + row.subtotal, 0)
+
   try {
     await carritoStore.confirmarCompra()
-    compraExitosa.value = '¡Compra realizada con éxito!'
-  } catch {
-    // carritoStore.errorMessage ya queda poblado desde el store
+
+    const comprobante: DatosComprobanteCompra = {
+      codigoVenta: `CMP-${Date.now().toString().slice(-6)}`,
+      fecha: new Date(),
+      comprador: authStore.user,
+      items: snapshotItems,
+      total: totalCalculado,
+    }
+
+    ultimoComprobante.value = comprobante
+    compraExitosa.value = '¡Compra realizada con éxito! Se generó tu comprobante de recojo.'
+    descargarComprobantePng(comprobante)
+  } catch (error) {
+    console.error('Error al confirmar compra:', error)
+  }
+}
+
+function descargarComprobanteActual() {
+  if (ultimoComprobante.value) {
+    descargarComprobantePng(ultimoComprobante.value)
   }
 }
 
@@ -66,7 +104,17 @@ function volverAlCatalogo() {
       <div class="container-fluid px-0">
         <!-- Alertas de éxito o error -->
         <div v-if="compraExitosa" class="alert alert-success mb-4" role="alert">
-          {{ compraExitosa }}
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <span>{{ compraExitosa }}</span>
+            <Button
+              v-if="ultimoComprobante"
+              label="Descargar comprobante"
+              icon="pi pi-download"
+              size="small"
+              class="text-white btn-custom-pillomart"
+              @click="descargarComprobanteActual"
+            />
+          </div>
         </div>
 
         <div v-if="carritoStore.errorMessage" class="alert alert-danger mb-4" role="alert">
@@ -81,7 +129,14 @@ function volverAlCatalogo() {
           <i class="pi pi-shopping-cart mb-3" style="font-size: 2.5rem; color: #b08ead"></i>
           <h5 class="fw-bold mb-2" style="color: #4b3049">Tu carrito está vacío</h5>
           <p class="text-muted mb-4">Explora el catálogo y agrega los libros que deseas comprar.</p>
-          <div>
+          <div class="d-flex justify-content-center flex-wrap gap-2">
+            <Button
+              v-if="ultimoComprobante"
+              label="Descargar comprobante de compra"
+              icon="pi pi-download"
+              class="text-white px-4 py-2 btn-custom-pillomart"
+              @click="descargarComprobanteActual"
+            />
             <Button
               label="Ir al catálogo de libros"
               icon="pi pi-book"

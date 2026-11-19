@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { isAxiosError } from 'axios'
 import { getTokenFromLocalStorage } from '@/helpers/index'
 import http from '@/plugins/axios'
 import router from '@/router'
@@ -6,6 +7,7 @@ import router from '@/router'
 export interface AuthUser {
   id?: number | string
   usuario?: string
+  email?: string
   nombre?: string
   rol?: string
   role?: string
@@ -17,6 +19,7 @@ interface JwtPayload {
   id?: number | string
   usuario?: string
   username?: string
+  email?: string
   nombre?: string
   rol?: string
   role?: string
@@ -69,8 +72,9 @@ export const useAuthStore = defineStore('auth', {
     const fallbackUser: AuthUser | null = payload
       ? {
           id: payload.sub ?? payload.id,
-          usuario: payload.usuario ?? payload.username ?? '',
-          nombre: payload.nombre ?? payload.usuario ?? 'Usuario',
+          usuario: payload.usuario ?? payload.username ?? payload.email ?? '',
+          email: payload.email,
+          nombre: payload.nombre ?? payload.usuario ?? payload.email ?? 'Usuario',
           rol: payload.rol ?? payload.role ?? '',
         }
       : null
@@ -97,7 +101,28 @@ export const useAuthStore = defineStore('auth', {
 
   actions: {
     async login(usuario: string, clave: string) {
-      const response = await http.post('auth/login', { usuario, clave })
+      const identificador = usuario.trim()
+      const password = clave.trim()
+
+      // Ajusta las claves según tu LoginDto en NestJS (por defecto envía usuario y clave;
+      // si tu DTO espera email y/o password, cámbialo aquí directamente)
+      let response
+      try {
+        response = await http.post('auth/login', {
+          usuario: identificador,
+          clave: password,
+        })
+      } catch (err) {
+        if (isAxiosError(err) && err.response?.status === 400 && identificador.includes('@')) {
+          response = await http.post('auth/login', {
+            email: identificador,
+            clave: password,
+          })
+        } else {
+          throw err
+        }
+      }
+
       const responseData: unknown = response.data
       const recordData =
         typeof responseData === 'object' && responseData !== null
@@ -110,7 +135,7 @@ export const useAuthStore = defineStore('auth', {
           : recordData
 
       const rawToken = innerData.access_token ?? innerData.token ?? innerData.accessToken ?? ''
-      const accessToken = typeof rawToken === 'string' ? rawToken : ''
+      const accessToken = typeof rawToken === 'string' && rawToken.trim() ? rawToken.trim() : ''
       const payload = decodeJwtPayload(accessToken)
 
       const rawUserObj = innerData.usuario ?? innerData.user
@@ -119,8 +144,8 @@ export const useAuthStore = defineStore('auth', {
           ? (rawUserObj as AuthUser)
           : {
               id: payload?.sub ?? payload?.id,
-              usuario,
-              nombre: payload?.nombre ?? usuario,
+              usuario: identificador,
+              nombre: payload?.nombre ?? identificador,
               rol: payload?.rol ?? payload?.role ?? '',
             }
 
@@ -129,6 +154,8 @@ export const useAuthStore = defineStore('auth', {
 
       if (accessToken) {
         localStorage.setItem('token', accessToken)
+      } else {
+        localStorage.removeItem('token')
       }
       localStorage.setItem('user', JSON.stringify(userData))
 
